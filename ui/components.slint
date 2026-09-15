@@ -1,0 +1,200 @@
+import { AppState } from "app-state.slint";
+
+export component ActionButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    in property <bool> selected;
+    in property <float> text-size: 12;
+    in property <color> normal: transparent;
+    callback clicked();
+    border-radius: 8px * AppState.scale;
+    background: !enabled ? normal : (touch.pressed || selected ? AppState.selected : touch.has-hover ? AppState.hover : normal);
+    accessible-role: button;
+    accessible-label: text;
+
+    focus-sink := FocusScope {
+        width: 0px;
+        height: 0px;
+    }
+
+    Text {
+        x: 0px;
+        y: 0px;
+        width: root.width;
+        height: root.height;
+        text: root.text;
+        color: root.enabled ? AppState.text : AppState.muted;
+        font-family: AppState.font;
+        font-size: root.text-size * 1px * AppState.scale;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+
+    touch := TouchArea {
+        x: 0px;
+        y: 0px;
+        width: root.width;
+        height: root.height;
+        enabled: root.enabled;
+        pointer-event(event) => {
+            if AppState.diagnose-input && event.kind != PointerEventKind.move {
+                AppState.input-trace("button pointer event: " + root.text);
+            }
+        }
+        clicked => {
+            focus-sink.focus();
+            if AppState.diagnose-input { AppState.input-trace("button clicked: " + root.text); }
+            root.clicked();
+        }
+    }
+}
+
+export component LinkCard inherits Rectangle {
+    in property <string> text;
+    callback clicked();
+    border-radius: 8px * AppState.scale;
+    background: AppState.window;
+    accessible-role: button;
+    accessible-label: text;
+
+    focus-sink := FocusScope {
+        width: 0px;
+        height: 0px;
+    }
+
+    Text {
+        width: parent.width;
+        height: parent.height;
+        text: root.text;
+        color: AppState.muted;
+        font-family: AppState.font;
+        font-size: 11px * AppState.scale;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+
+    touch := TouchArea {
+        x: 0px;
+        y: 0px;
+        width: root.width;
+        height: root.height;
+        clicked => {
+            focus-sink.focus();
+            root.clicked();
+        }
+    }
+}
+
+export component ConfigRow inherits Rectangle {
+    in property <string> label;
+    in property <bool> enabled: true;
+    height: 32px * AppState.scale;
+    border-radius: 8px * AppState.scale;
+    background: AppState.row;
+    clip: true;
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: 80px * AppState.scale;
+        height: root.height;
+        background: AppState.label;
+        opacity: root.enabled ? 1 : 0.55;
+        Text {
+            x: 0px;
+            y: 0px;
+            width: parent.width;
+            height: parent.height;
+            text: root.label;
+            color: root.enabled ? AppState.text : AppState.muted;
+            font-family: AppState.font;
+            font-size: 12px * AppState.scale;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+
+    @children
+}
+
+export component OptionRow inherits ConfigRow {
+    in property <[string]> options;
+    in property <int> selected-index;
+    in property <int> disabled-index: -1;
+    callback selected(int);
+    for label[index] in root.options: ActionButton {
+        x: 80px * AppState.scale + index * self.width;
+        width: (root.width - 80px * AppState.scale) / root.options.length;
+        height: root.height;
+        text: label;
+        border-radius: 0px;
+        selected: root.selected-index == index;
+        enabled: root.enabled && index != root.disabled-index;
+        clicked => { root.selected(index); }
+    }
+}
+
+export component NumberField inherits Rectangle {
+    in property <string> value;
+    in property <bool> enabled: true;
+    callback edit(string);
+    callback commit(string);
+    changed value => { if !input.has-focus { input.text = root.value; } }
+    input := TextInput {
+        x: 0px;
+        y: 0px;
+        width: root.width;
+        height: root.height;
+        text: root.value;
+        read-only: !root.enabled;
+        single-line: true;
+        color: root.enabled ? AppState.text : AppState.muted;
+        font-family: AppState.font;
+        font-size: 12px * AppState.scale;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        edited => { root.edit(self.text); }
+        accepted => { root.commit(self.text); self.text = root.value; }
+        changed has-focus => { if !self.has-focus { root.commit(self.text); self.text = root.value; } }
+    }
+}
+
+export component NumberUnitField inherits Rectangle {
+    in property <string> value;
+    in property <string> unit;
+    in property <bool> enabled: true;
+    callback edit(string);
+    callback commit(string);
+
+    NumberField {
+        x: 0px;
+        y: 0px;
+        width: parent.width - 28px * AppState.scale;
+        height: parent.height;
+        value: root.value;
+        enabled: root.enabled;
+        edit(value) => { root.edit(value); }
+        commit(value) => { root.commit(value); }
+    }
+
+    Rectangle {
+        x: parent.width - 28px * AppState.scale;
+        y: 0px;
+        width: 28px * AppState.scale;
+        height: parent.height;
+        background: AppState.label;
+        opacity: root.enabled ? 1 : 0.55;
+
+        Text {
+            width: parent.width;
+            height: parent.height;
+            text: root.unit;
+            color: root.enabled ? AppState.text : AppState.muted;
+            font-family: AppState.font;
+            font-size: 12px * AppState.scale;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+}

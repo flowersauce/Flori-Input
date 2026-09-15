@@ -1,0 +1,52 @@
+site_name: Flori Input
+
+site_url: https://flowersauce.github.io/Flori-Input/
+
+theme:
+  name: material
+  language: zh
+  logo: assets/icons/Flori-Input_transparent_dynamic.svg
+  favicon: assets/icons/Flori-Input_transparent.svg
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: zh
+          default: true
+          name: 简体中文
+
+        - locale: en
+          name: English
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+repo_url: https://github.com/flowersauce/Flori-Input
+repo_name: flowersauce/Flori-Input
+
+nav:
+  - 首页: index.md
+
+  - 快速开始:
+      - 安装: getting-started/installation.md
+      - 快速入门: getting-started/quick-start.md
+
+  - 功能:
+      - 触发器: features/trigger.md
+      - 模拟粘贴: features/paste.md
+      - 事件剧本: features/event-script.md
+
+  - 设置:
+      - 外观与语言: settings/language-and-appearance.md
+
+  - 法律信息:
+      - 版权声明: legal/copyright.md
+      - 字体授权: legal/fonts.md
+      - 许可证: legal/licenses.md
+      - 第三方组件: legal/third-party.md
+      - 使用说明: legal/usage-notice.md

@@ -1,99 +1,73 @@
 cmake_minimum_required(VERSION 3.30)
 
-set(FS_CLICKER_TARGET_NAME FSClicker)
-set(FS_CLICKER_DISPLAY_NAME "FSClicker")
-set(FS_CLICKER_VERSION 1.3.1)
-set(FS_CLICKER_AUTHOR_NAME "Flowersauce")
-set(FS_CLICKER_REPOSITORY_URL "https://github.com/flowersauce/FSClicker")
+set(FLORI_INPUT_VERSION 1.4.0)
+project(Flori-Input VERSION ${FLORI_INPUT_VERSION} LANGUAGES CXX RC)
 
-project(${FS_CLICKER_TARGET_NAME} VERSION ${FS_CLICKER_VERSION} LANGUAGES CXX)
+find_package(Slint 1.17.1 EXACT CONFIG REQUIRED)
+find_package(glaze 8.3.0 EXACT CONFIG REQUIRED)
 
-option(FS_CLICKER_STATIC_RUNTIME "Link MinGW runtime libraries statically." ON)
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core Quick Qml Svg)
-
-qt_standard_project_setup(REQUIRES 6.11)
-
-set_source_files_properties(qml/main.qml PROPERTIES QT_QML_SOURCE_TYPENAME Main)
-set_source_files_properties(qml/components/config_row.qml PROPERTIES QT_QML_SOURCE_TYPENAME ConfigRow)
-set_source_files_properties(qml/components/nav_button.qml PROPERTIES QT_QML_SOURCE_TYPENAME NavButton)
-set_source_files_properties(qml/components/segment_button.qml PROPERTIES QT_QML_SOURCE_TYPENAME SegmentButton)
-set_source_files_properties(qml/components/small_action_button.qml PROPERTIES QT_QML_SOURCE_TYPENAME SmallActionButton)
-set_source_files_properties(qml/components/traffic_button.qml PROPERTIES QT_QML_SOURCE_TYPENAME TrafficButton)
-set_source_files_properties(qml/theme/atom_theme.qml PROPERTIES QT_QML_SOURCE_TYPENAME AtomTheme)
-
-qt_add_executable(${FS_CLICKER_TARGET_NAME}
-        WIN32
-        src/main.cpp
-        src/app_config.cpp
-        src/clicker_controller.cpp
-        src/event_injector.cpp
-        src/global_definitions.cpp
-        src/keyboard_hook.cpp
-        include/app_config.h
-        include/clicker_controller.h
-        include/event_injector.h
-        include/global_definitions.h
-        include/keyboard_hook.h
-        resources/app_icon.rc
+set(FLORI_INPUT_RESOURCE_DIR "${PROJECT_SOURCE_DIR}/resources")
+file(READ "${FLORI_INPUT_RESOURCE_DIR}/themes/dark.jsonc" UI_DARK)
+file(READ "${FLORI_INPUT_RESOURCE_DIR}/themes/light.jsonc" UI_LIGHT)
+file(READ "${FLORI_INPUT_RESOURCE_DIR}/languages/zh-CN.jsonc" UI_ZH)
+file(READ "${FLORI_INPUT_RESOURCE_DIR}/languages/en-US.jsonc" UI_EN)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+        "${FLORI_INPUT_RESOURCE_DIR}/themes/dark.jsonc"
+        "${FLORI_INPUT_RESOURCE_DIR}/themes/light.jsonc"
+        "${FLORI_INPUT_RESOURCE_DIR}/languages/zh-CN.jsonc"
+        "${FLORI_INPUT_RESOURCE_DIR}/languages/en-US.jsonc"
 )
+configure_file(src/app/ui_resource_defaults.h.in ui_resource_defaults.h @ONLY)
 
-qt_add_qml_module(${FS_CLICKER_TARGET_NAME}
-        URI FSClicker
-        VERSION 1.0
-        QML_FILES
-        qml/main.qml
-        qml/components/config_row.qml
-        qml/components/nav_button.qml
-        qml/components/segment_button.qml
-        qml/components/small_action_button.qml
-        qml/components/traffic_button.qml
-        qml/theme/atom_theme.qml
+add_executable(FloriInput WIN32
+        src/app/application.cpp
+        src/app/app_config.cpp
+        src/app/clicker_runtime.cpp
+        src/app/main.cpp
+        src/app/ui_resources.cpp
+        src/core/clicker_controller.cpp
+        src/core/event_script.cpp
+        src/core/input_program.cpp
+        src/core/input_router.cpp
+        src/core/key_catalog.cpp
+        src/core/program_executor.cpp
+        src/core/task_scheduler.cpp
+        src/platform/event_script_file.cpp
+        src/platform/keyboard_hook.cpp
+        src/platform/paste_input.cpp
+        src/platform/windows_input_backend.cpp
+        src/platform/windows_platform.cpp
+        src/platform/windows_trigger_executor.cpp
+        resources/slint_app.rc
 )
-
-qt_add_resources(${FS_CLICKER_TARGET_NAME} app_assets
-        PREFIX "/"
-        FILES
-        resources/FSClicker_transparent.svg
-        resources/Jura-Medium.ttf
-        resources/SarasaUiSC-Regular.ttf
-        resources/open.wav
-        resources/close.wav
+slint_target_sources(FloriInput ui/main.slint)
+target_compile_features(FloriInput PRIVATE cxx_std_23)
+set_target_properties(FloriInput PROPERTIES CXX_EXTENSIONS OFF SLINT_EMBED_RESOURCES embed-files OUTPUT_NAME "Flori-Input")
+target_include_directories(FloriInput PRIVATE
+        "${PROJECT_SOURCE_DIR}/include"
+        "${FLORI_INPUT_RESOURCE_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}"
 )
-
-target_include_directories(${FS_CLICKER_TARGET_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_compile_definitions(${FS_CLICKER_TARGET_NAME} PRIVATE
-        FS_CLICKER_APP_NAME="${FS_CLICKER_DISPLAY_NAME}"
-        FS_CLICKER_APP_VERSION="${PROJECT_VERSION}"
-        FS_CLICKER_AUTHOR_NAME="${FS_CLICKER_AUTHOR_NAME}"
-        FS_CLICKER_REPOSITORY_URL="${FS_CLICKER_REPOSITORY_URL}"
-)
-
-target_link_libraries(${FS_CLICKER_TARGET_NAME} PRIVATE
-        Qt6::Core
-        Qt6::Quick
-        Qt6::Qml
-        Qt6::Svg
+target_compile_definitions(FloriInput PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN UNICODE _UNICODE
+        FLORI_INPUT_APP_VERSION="${PROJECT_VERSION}" FLORI_INPUT_AUTHOR_NAME="Flowersauce")
+target_link_libraries(FloriInput PRIVATE
+        Slint::Slint
+        glaze::glaze
+        user32
+        advapi32
+        gdi32
+        comctl32
+        comdlg32
+        shell32
         winmm
 )
-
-if (FS_CLICKER_STATIC_RUNTIME AND MINGW)
-    target_link_options(${FS_CLICKER_TARGET_NAME} PRIVATE -static -static-libgcc -static-libstdc++)
+if (MSVC)
+    target_compile_options(FloriInput PRIVATE /utf-8 /Zc:preprocessor)
+    target_link_options(FloriInput PRIVATE /ENTRY:mainCRTStartup)
 endif ()
 
-set_target_properties(${FS_CLICKER_TARGET_NAME} PROPERTIES
-        OUTPUT_NAME ${FS_CLICKER_TARGET_NAME}
-)
-
-include(GNUInstallDirs)
-install(TARGETS ${FS_CLICKER_TARGET_NAME}
-        BUNDLE DESTINATION .
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+add_custom_command(TARGET FloriInput POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:FloriInput> $<TARGET_FILE_DIR:FloriInput>
+        COMMAND_EXPAND_LISTS
+        VERBATIM
 )

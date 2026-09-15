@@ -1,0 +1,21 @@
+// Flori Input UI resources. UTF-8; restart after editing.
+{
+  "window": "#21252b",
+  "border": "#3e4451",
+  "panel": "#282c34",
+  "title": "#282c34",
+  "row": "#3e4451",
+  "label": "#4b5263",
+  "hover": "#262b32",
+  "selected": "#21252b",
+  "text": "#ffffff",
+  "muted": "#5c6370",
+  "accent": "#61afef",
+  "danger": "#e06c75",
+  "green": "#98c379",
+  "yellow": "#e5c07b",
+  "coordinate-border": "#ffffff33",
+  "coordinate-text": "#ffffffe6",
+  "inactive": "#1f3552",
+  "on-accent": "#ffffff"
+}

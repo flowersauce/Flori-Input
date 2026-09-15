@@ -1,0 +1,5 @@
+repeat(-1) {
+    move(400, 300);
+    stroke(Mouse.Left, 0);
+    wheel(1);
+}

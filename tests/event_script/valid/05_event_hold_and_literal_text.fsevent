@@ -1,0 +1,5 @@
+// 验证原子持键及 text 的字面反斜杠、双写双引号。
+event(Key.Shift, Down);
+stroke(Key.A, 5);
+event(Key.Shift, Up);
+text(" \n ""quoted""", 5, 10);

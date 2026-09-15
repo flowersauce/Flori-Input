@@ -1,0 +1,4 @@
+// 预期：静态校验拒绝对仍按住的目标执行 stroke。
+event(Key.Shift, Down);
+stroke(Key.Shift, 10);
+event(Key.Shift, Up);

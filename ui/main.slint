@@ -1,0 +1,832 @@
+import "../resources/fonts/FloriInputUI-Medium.ttf";
+import { AppState } from "app-state.slint";
+import { TextEdit, ScrollView, Palette } from "std-widgets.slint";
+import {
+    ActionButton,
+    ConfigRow,
+    LinkCard,
+    OptionRow,
+    NumberUnitField,
+} from "components.slint";
+export { AppState }from "app-state.slint";
+
+export component MainWindow inherits Window {
+    property <bool> widget-dark: AppState.dark;
+    init => { Palette.color-scheme = root.widget-dark ? ColorScheme.dark : ColorScheme.light; }
+    changed widget-dark => { Palette.color-scheme = root.widget-dark ? ColorScheme.dark : ColorScheme.light; }
+    in property <string> window-title: "Flori Input";
+    in-out property <int> page;
+    changed page => {
+        AppState.select-page(root.page);
+        if AppState.diagnose-input { AppState.input-trace("page changed: " + root.page); }
+    }
+    in-out property <bool> pinned;
+    callback minimize-requested();
+    callback quit-requested();
+    title: window-title;
+    preferred-width: 500px * AppState.scale;
+    preferred-height: 360px * AppState.scale;
+    min-width: 500px * AppState.scale;
+    max-width: 500px * AppState.scale;
+    min-height: 360px * AppState.scale;
+    max-height: 360px * AppState.scale;
+    icon: @image-url("../resources/icons/Flori-Input_transparent.svg");
+    no-frame: true;
+    always-on-top: pinned;
+    background: transparent;
+    default-font-family: AppState.font;
+
+    focus-sink := FocusScope {
+        width: 0px;
+        height: 0px;
+    }
+
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: root.width;
+        height: root.height;
+        border-radius: 28px * AppState.scale;
+        border-width: 2px * AppState.scale;
+        border-color: root.pinned ? AppState.accent : AppState.border;
+        background: AppState.window.with-alpha(AppState.window-active ? 0.96 : 1.0);
+        animate background { duration: 150ms; }
+        Rectangle {
+            x: 12px * AppState.scale;
+            y: 12px * AppState.scale;
+            width: 476px * AppState.scale;
+            height: 32px * AppState.scale;
+            border-radius: 16px * AppState.scale;
+            background: AppState.title;
+            Text {
+                x: 16px * AppState.scale;
+                width: 250px * AppState.scale;
+                text: "Flori Input";
+                color: AppState.accent;
+                font-family: AppState.font;
+                font-size: 14px * AppState.scale;
+                font-weight: 600;
+                vertical-alignment: center;
+            }
+
+            for color[index] in [AppState.green, AppState.yellow, AppState.danger]: Rectangle {
+                x: (394px + index * 25px) * AppState.scale;
+                y: 9px * AppState.scale;
+                width: 23px * AppState.scale;
+                height: 14px * AppState.scale;
+                border-radius: (index == 1 ? 3px : 7px) * AppState.scale;
+                background: color;
+                opacity: traffic.pressed || (index == 1 && root.pinned) ? 0.7 : traffic.has-hover ? 0.9 : 1;
+                Rectangle {
+                    visible: index != 1;
+                    x: index == 0 ? parent.width / 2 : 0px;
+                    width: parent.width / 2;
+                    height: parent.height;
+                    border-radius: 3px * AppState.scale;
+                    background: color;
+                }
+
+                traffic := TouchArea {
+                    clicked => {
+                        focus-sink.focus();
+                        if (index == 0) { root.minimize-requested(); }
+                        else if (index == 1) { root.pinned = !root.pinned; }
+                        else { root.quit-requested(); }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            x: 12px * AppState.scale;
+            y: 56px * AppState.scale;
+            width: 476px * AppState.scale;
+            height: 292px * AppState.scale;
+            border-radius: 20px * AppState.scale;
+            background: AppState.panel;
+            Rectangle {
+                x: 120px * AppState.scale;
+                y: 16px * AppState.scale;
+                width: 4px * AppState.scale;
+                height: 260px * AppState.scale;
+                border-radius: 2px;
+                background: AppState.window;
+            }
+
+            for page-index[index] in [0, 3, 4, 1, 2]: ActionButton {
+                x: 16px * AppState.scale;
+                y: (16px + (index >= 3 ? index + 2 : index) * 38px) * AppState.scale;
+                width: 88px * AppState.scale;
+                height: 32px * AppState.scale;
+                text: page-index == 0 ? (AppState.tr("nav.trigger")) : page-index == 1 ? (AppState.tr("nav.settings")) : page-index == 2 ? (AppState.tr("nav.about")) : page-index == 3 ? (AppState.tr("nav.paste")) : (AppState.tr("nav.script"));
+                text-size: 15;
+                selected: root.page == page-index;
+                enabled: true;
+                clicked => { AppState.request-page(page-index); }
+            }
+
+            Rectangle {
+                visible: root.page == 0;
+                x: 140px * AppState.scale;
+                y: 0px;
+                width: 320px * AppState.scale;
+                height: 292px * AppState.scale;
+                ConfigRow {
+                    x: 0px;
+                    y: 16px * AppState.scale;
+                    width: 157px * AppState.scale;
+                    label: AppState.tr("common.start_hotkey");
+                    enabled: !AppState.running;
+                    ActionButton {
+                        x: 80px * AppState.scale;
+                        width: 77px * AppState.scale;
+                        height: parent.height;
+                        border-radius: 0px;
+                        text: AppState.capture == 1 ? (AppState.tr("common.capturing")) : AppState.start-hotkey;
+                        enabled: !AppState.running;
+                        clicked => { AppState.begin-capture(1); }
+                    }
+                }
+
+                ConfigRow {
+                    x: 163px * AppState.scale;
+                    y: 16px * AppState.scale;
+                    width: 157px * AppState.scale;
+                    label: AppState.tr("coordinates.label");
+                    enabled: !AppState.running && AppState.cursor == 1;
+                    ActionButton {
+                        x: 80px * AppState.scale;
+                        width: 77px * AppState.scale;
+                        height: parent.height;
+                        border-radius: 0px;
+                        text: AppState.capture == 3 ? (AppState.tr("common.capturing")) : AppState.coordinate;
+                        enabled: !AppState.running && AppState.cursor == 1;
+                        clicked => { AppState.begin-capture(3); }
+                    }
+                }
+
+                OptionRow {
+                    y: 54px * AppState.scale;
+                    width: parent.width;
+                    label: AppState.tr("trigger.input_button");
+                    options: [
+                        AppState.tr("trigger.mouse_left"),
+                        AppState.tr("trigger.mouse_middle"),
+                        AppState.tr("trigger.mouse_right"),
+                        AppState.capture == 2 ? (AppState.tr("common.capture")) : AppState.custom-key
+                    ];
+                    selected-index: AppState.input-key;
+                    enabled: !AppState.running;
+                    selected(index) => { if index == 3 { AppState.begin-capture(2); } else { AppState.edit-option(0, index); } }
+                }
+
+                OptionRow {
+                    y: 92px * AppState.scale;
+                    width: parent.width;
+                    label: AppState.tr("trigger.action");
+                    options: [AppState.tr("trigger.repeat"), AppState.tr("trigger.hold")];
+                    selected-index: AppState.action;
+                    disabled-index: AppState.wheel ? 1 : -1;
+                    enabled: !AppState.running;
+                    selected(index) => { AppState.edit-option(1, index); }
+                }
+
+                OptionRow {
+                    y: 130px * AppState.scale;
+                    width: parent.width;
+                    label: AppState.tr("trigger.cursor");
+                    options: [AppState.tr("trigger.cursor_free"), AppState.tr("trigger.cursor_fixed")];
+                    selected-index: AppState.cursor;
+                    enabled: !AppState.running;
+                    selected(index) => { AppState.edit-option(2, index); }
+                }
+
+                ConfigRow {
+                    x: 0px;
+                    y: 168px * AppState.scale;
+                    width: 157px * AppState.scale;
+                    label: AppState.tr("common.press_duration");
+                    enabled: !AppState.running && AppState.action == 0 && !AppState.wheel;
+                    NumberUnitField {
+                        x: 80px * AppState.scale;
+                        width: 77px * AppState.scale;
+                        height: parent.height;
+                        value: AppState.press-duration;
+                        unit: AppState.tr("common.seconds");
+                        enabled: !AppState.running && AppState.action == 0 && !AppState.wheel;
+                        edit(value) => { AppState.edit-number(2, value); }
+                        commit(value) => { AppState.edit-number(2, value); }
+                    }
+                }
+
+                ConfigRow {
+                    x: 163px * AppState.scale;
+                    y: 168px * AppState.scale;
+                    width: 157px * AppState.scale;
+                    label: AppState.tr("trigger.jitter");
+                    enabled: !AppState.running && AppState.action == 0;
+                    NumberUnitField {
+                        x: 80px * AppState.scale;
+                        width: 77px * AppState.scale;
+                        height: parent.height;
+                        value: AppState.jitter;
+                        unit: "%";
+                        enabled: !AppState.running && AppState.action == 0;
+                        edit(value) => { AppState.edit-number(1, value); }
+                        commit(value) => { AppState.edit-number(1, value); }
+                    }
+                }
+
+                ConfigRow {
+                    x: 0px;
+                    y: 206px * AppState.scale;
+                    width: parent.width;
+                    label: AppState.tr("trigger.period");
+                    enabled: !AppState.running && AppState.action == 0;
+                    NumberUnitField {
+                        x: 80px * AppState.scale;
+                        width: parent.width - 80px * AppState.scale;
+                        height: parent.height;
+                        value: AppState.period;
+                        unit: AppState.tr("common.seconds");
+                        enabled: !AppState.running && AppState.action == 0;
+                        edit(value) => { AppState.edit-number(0, value); }
+                        commit(value) => { AppState.edit-number(0, value); }
+                    }
+                }
+
+                Rectangle {
+                    y: 244px * AppState.scale;
+                    width: parent.width;
+                    height: 32px * AppState.scale;
+                    border-radius: 8px * AppState.scale;
+                    background: AppState.display-error != "" ? AppState.danger : AppState.running ? AppState.danger : AppState.can-start ? AppState.accent : AppState.inactive;
+                    clip: true;
+                    Text {
+                        x: 6px * AppState.scale;
+                        width: parent.width - 12px * AppState.scale;
+                        height: parent.height;
+                        text: AppState.display-error != "" ? AppState.display-error : AppState.status;
+                        color: AppState.display-error != "" || AppState.running || AppState.can-start ? AppState.on-accent : AppState.muted;
+                        font-size: (AppState.display-error != "" ? 10px : 13px) * AppState.scale;
+                        overflow: elide;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            Rectangle {
+                visible: root.page == 1;
+                x: 140px * AppState.scale;
+                y: 0px;
+                width: 320px * AppState.scale;
+                height: 292px * AppState.scale;
+                OptionRow {
+                    y: 16px * AppState.scale;
+                    width: parent.width;
+                    label: AppState.tr("settings.theme");
+                    options: [AppState.tr("common.automatic"), AppState.tr("settings.theme_dark"), AppState.tr("settings.theme_light")];
+                    selected-index: AppState.theme-mode;
+                    enabled: !AppState.running;
+                    selected(index) => { AppState.edit-option(3, index); }
+                }
+
+                OptionRow {
+                    y: 54px * AppState.scale;
+                    width: parent.width;
+                    label: AppState.tr("settings.scale");
+                    options: ["100%", "125%", "150%"];
+                    selected-index: AppState.scale-index;
+                    enabled: !AppState.running;
+                    selected(index) => { AppState.edit-option(4, index); }
+                }
+
+                OptionRow {
+                    y: 92px * AppState.scale;
+                    width: parent.width;
+                    label: AppState.tr("settings.language");
+                    options: [
+                        AppState.tr("common.automatic"),
+                        AppState.tr("language.zh_cn"),
+                        AppState.tr("language.en_us")
+                    ];
+                    selected-index: AppState.language-mode;
+                    enabled: !AppState.running;
+                    selected(index) => { AppState.edit-option(5, index); }
+                }
+
+                Rectangle {
+                    y: 244px * AppState.scale;
+                    width: parent.width;
+                    height: 32px * AppState.scale;
+                    border-radius: 8px * AppState.scale;
+                    background: AppState.settings-error != "" ? AppState.danger : AppState.accent;
+                    clip: true;
+                    Text {
+                        x: 6px * AppState.scale;
+                        width: parent.width - 12px * AppState.scale;
+                        height: parent.height;
+                        text: AppState.settings-error != "" ? AppState.settings-error : AppState.tr("common.ready");
+                        color: AppState.on-accent;
+                        font-size: (AppState.settings-error != "" ? 10px : 13px) * AppState.scale;
+                        overflow: elide;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            Rectangle {
+                visible: root.page == 3;
+                x: 140px * AppState.scale;
+                width: 320px * AppState.scale;
+                height: 292px * AppState.scale;
+                Rectangle {
+                    y: 54px * AppState.scale;
+                    width: parent.width;
+                    height: 70px * AppState.scale;
+                    border-radius: 4px;
+                    // Slint 1.17.1 Fluent TextEdit overlays white (15/255 dark, 179/255 light).
+                    // Invert that blend so the unfocused fill resolves to AppState.row.
+                    property <float> overlay: AppState.dark ? 15 : 179;
+                    background: paste-editor.has-focus ? AppState.row : rgb(
+                        round((AppState.row.red - self.overlay) * 255 / (255 - self.overlay)),
+                        round((AppState.row.green - self.overlay) * 255 / (255 - self.overlay)),
+                        round((AppState.row.blue - self.overlay) * 255 / (255 - self.overlay)));
+                    paste-editor := TextEdit {
+                        width: parent.width;
+                        height: parent.height;
+                        text <=> AppState.paste-text;
+                        accessible-placeholder-text: AppState.tr("paste.placeholder");
+                        read-only: AppState.running;
+                        font-size: 12px * AppState.scale;
+                    }
+                    Text {
+                        x: 12px * AppState.scale;
+                        width: parent.width - 24px * AppState.scale;
+                        height: parent.height;
+                        text: AppState.tr("paste.placeholder");
+                        color: AppState.text.with-alpha(0.55);
+                        font-family: AppState.font;
+                        font-size: 12px * AppState.scale;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        visible: AppState.paste-text == "" && !paste-editor.has-focus && !AppState.running;
+                    }
+                }
+
+                ConfigRow {
+                    x: 0px;
+                    y: 16px * AppState.scale;
+                    width: 157px * AppState.scale;
+                    label: AppState.tr("common.start_hotkey");
+                    enabled: !AppState.running;
+                    ActionButton {
+                        x: 80px * AppState.scale;
+                        width: parent.width - 80px * AppState.scale;
+                        height: parent.height;
+                        border-radius: 0px;
+                        text: AppState.paste-capture ? (AppState.tr("common.capturing")) : AppState.paste-hotkey;
+                        enabled: !AppState.running;
+                        clicked => { AppState.paste-begin-capture(); }
+                    }
+                }
+
+                Rectangle {
+                    x: 163px * AppState.scale;
+                    y: 16px * AppState.scale;
+                    width: 157px * AppState.scale;
+                    height: 32px * AppState.scale;
+                    border-radius: 8px * AppState.scale;
+                    background: AppState.row.with-alpha(0.65);
+                    Text {
+                        text: AppState.tr("paste.clipboard_hint");
+                        color: AppState.text;
+                        font-size: 12px * AppState.scale;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+
+                OptionRow {
+                    y: 130px * AppState.scale;
+                    width: parent.width;
+                    label: AppState.tr("paste.input_mode");
+                    options: [AppState.tr("paste.simulate_keys"), AppState.tr("paste.unicode_text")];
+                    selected-index: AppState.paste-strategy;
+                    enabled: !AppState.running;
+                    selected(index) => { AppState.paste-edit-strategy(index); }
+                }
+
+                for field in 2: ConfigRow {
+                    x: field * 163px * AppState.scale;
+                    y: 168px * AppState.scale;
+                    width: 157px * AppState.scale;
+                    label: field == 0 ? (AppState.tr("common.press_duration")) : (AppState.tr("paste.interval"));
+                    enabled: !AppState.running;
+                    NumberUnitField {
+                        x: 80px * AppState.scale;
+                        width: 77px * AppState.scale;
+                        height: parent.height;
+                        value: field == 0 ? AppState.paste-press : AppState.paste-interval;
+                        unit: AppState.tr("common.seconds");
+                        enabled: !AppState.running;
+                        edit(value) => { AppState.paste-edit-number(field, value); }
+                        commit(value) => { AppState.paste-edit-number(field, value); }
+                    }
+                }
+                Rectangle {
+                    y: 244px * AppState.scale;
+                    width: parent.width;
+                    height: 32px * AppState.scale;
+                    border-radius: 8px * AppState.scale;
+                    background: AppState.paste-error != "" || AppState.running ? AppState.danger : AppState.accent;
+                    clip: true;
+                    Text {
+                        x: 6px * AppState.scale;
+                        width: parent.width - 12px * AppState.scale;
+                        height: parent.height;
+                        text: AppState.paste-error != "" ? AppState.localize(AppState.paste-error) : AppState.paste-status;
+                        color: AppState.on-accent;
+                        font-size: (AppState.paste-error != "" ? 10px : 13px) * AppState.scale;
+                        overflow: elide;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            Rectangle {
+                visible: root.page == 4;
+                x: 140px * AppState.scale;
+                y: 0px;
+                width: 320px * AppState.scale;
+                height: 292px * AppState.scale;
+                ConfigRow {
+                    x: 0px;
+                    y: 16px * AppState.scale;
+                    width: 157px * AppState.scale;
+                    label: AppState.tr("common.start_hotkey");
+                    enabled: !AppState.running;
+                    ActionButton {
+                        x: 80px * AppState.scale;
+                        width: parent.width - 80px * AppState.scale;
+                        height: parent.height;
+                        border-radius: 0px;
+                        text: AppState.script-capture ? (AppState.tr("common.capturing")) : AppState.script-hotkey;
+                        enabled: !AppState.running;
+                        clicked => { AppState.script-begin-capture(); }
+                    }
+                }
+
+                ActionButton {
+                    x: 163px * AppState.scale;
+                    y: 16px * AppState.scale;
+                    width: 157px * AppState.scale;
+                    height: 32px * AppState.scale;
+                    normal: AppState.row;
+                    text: AppState.tr("script.open_folder");
+                    enabled: !AppState.running;
+                    clicked => { AppState.script-file-action(0); }
+                }
+
+                Rectangle {
+                    y: 54px * AppState.scale;
+                    width: parent.width;
+                    height: (2 * 32px + 6px) * AppState.scale;
+                    border-radius: 8px * AppState.scale;
+                    background: AppState.row;
+                    clip: true;
+                    if AppState.script-files.length == 0: Text {
+                        text: AppState.tr("script.empty");
+                        color: AppState.text.with-alpha(0.55);
+                        font-size: 12px * AppState.scale;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    script-list := ScrollView {
+                        width: parent.width;
+                        height: parent.height;
+                        property <length> row-step: 38px * AppState.scale;
+                        horizontal-scrollbar-policy: always-off;
+                        viewport-width: self.visible-width;
+                        viewport-height: max(self.visible-height,
+                            AppState.script-files.length * self.row-step - 6px * AppState.scale);
+                        TouchArea {
+                            width: script-list.viewport-width;
+                            height: script-list.viewport-height;
+                            scroll-event(event) => {
+                                if event.delta-y == 0px { return reject; }
+                                script-list.viewport-y = -min(
+                                    max(0, AppState.script-files.length - 2),
+                                    max(0, round(-script-list.viewport-y / script-list.row-step)
+                                    + (event.delta-y < 0px ? 1 : -1))) * script-list.row-step;
+                                return accept;
+                            }
+                            VerticalLayout {
+                                padding: 0px;
+                                spacing: 6px * AppState.scale;
+                                alignment: start;
+                                for file in AppState.script-files: Rectangle {
+                                    height: 32px * AppState.scale;
+                                    background: file == AppState.script-file ? AppState.accent : AppState.row;
+                                    Text {
+                                        x: 12px * AppState.scale;
+                                        width: parent.width - 24px * AppState.scale;
+                                        text: file;
+                                        color: file == AppState.script-file ? white : AppState.text;
+                                        font-size: 12px * AppState.scale;
+                                        vertical-alignment: center;
+                                        overflow: elide;
+                                    }
+
+                                    TouchArea {
+                                        enabled: !AppState.running;
+                                        clicked => { AppState.script-select(file); }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                script-file-actions := Rectangle {
+                    x: 0px;
+                    y: 130px * AppState.scale;
+                    width: (parent.width - 12px * AppState.scale) * 2 / 3 + 6px * AppState.scale;
+                    height: 32px * AppState.scale;
+                    border-radius: 8px * AppState.scale;
+                    background: AppState.row;
+                    clip: true;
+                    for action in 2: ActionButton {
+                        x: action * script-file-actions.width / 2;
+                        width: script-file-actions.width / 2;
+                        height: parent.height;
+                        border-radius: 0px;
+                        text: action == 0 ? (AppState.tr("common.refresh")) : (AppState.tr("common.edit"));
+                        enabled: !AppState.running && (action == 0 || AppState.script-file != "");
+                        clicked => { AppState.script-file-action(action + 1); }
+                    }
+                }
+
+                ActionButton {
+                    x: script-file-actions.width + 6px * AppState.scale;
+                    y: 130px * AppState.scale;
+                    width: (parent.width - 12px * AppState.scale) / 3;
+                    height: 32px * AppState.scale;
+                    normal: AppState.row;
+                    text: AppState.capture == 4 ? AppState.tr("common.capturing") : AppState.tr("coordinates.capture");
+                    enabled: !AppState.running;
+                    clicked => { AppState.script-pick-coordinate(); }
+                }
+
+                Rectangle {
+                    y: 244px * AppState.scale;
+                    width: parent.width;
+                    height: 32px * AppState.scale;
+                    border-radius: 8px * AppState.scale;
+                    background: AppState.script-error != "" || AppState.running ? AppState.danger : AppState.accent;
+                    clip: true;
+                    Text {
+                        x: 6px * AppState.scale;
+                        width: parent.width - 12px * AppState.scale;
+                        height: parent.height;
+                        text: AppState.script-error != "" ? AppState.localize(AppState.script-error) : AppState.script-status;
+                        color: AppState.on-accent;
+                        font-size: (AppState.script-error != "" ? 10px : 13px) * AppState.scale;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                }
+            }
+
+            about-page := Rectangle {
+                visible: root.page == 2;
+                x: 140px * AppState.scale;
+                y: 0px;
+                width: 320px * AppState.scale;
+                height: 292px * AppState.scale;
+                private property <length> heading-font-size: 16px * AppState.scale;
+                private property <length> detail-font-size: 11px * AppState.scale;
+                private property <length> link-font-size: 10px * AppState.scale;
+                private property <length> footer-card-width: (self.width - 12px * AppState.scale) / 3;
+                Rectangle {
+                    x: 0px;
+                    y: 16px * AppState.scale;
+                    width: 320px * AppState.scale;
+                    height: 104px * AppState.scale;
+                    border-radius: 8px * AppState.scale;
+                    background: AppState.window;
+
+                    Image {
+                        x: 36px * AppState.scale;
+                        y: 8px * AppState.scale;
+                        width: 88px * AppState.scale;
+                        height: 88px * AppState.scale;
+                        source: @image-url("../resources/icons/Flori-Input_transparent.svg");
+                        image-fit: contain;
+                    }
+
+                    Text {
+                        x: 168px * AppState.scale;
+                        y: 18px * AppState.scale;
+                        width: 144px * AppState.scale;
+                        height: 22px * AppState.scale;
+                        text: "Flori Input";
+                        color: AppState.danger;
+                        font-family: AppState.font;
+                        font-size: about-page.heading-font-size;
+                        font-weight: 600;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        x: 168px * AppState.scale;
+                        y: 46px * AppState.scale;
+                        width: 144px * AppState.scale;
+                        height: 18px * AppState.scale;
+                        text: (AppState.tr("about.version")) + AppState.version;
+                        color: AppState.text;
+                        font-size: about-page.detail-font-size;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        x: 168px * AppState.scale;
+                        y: 68px * AppState.scale;
+                        width: 144px * AppState.scale;
+                        height: 18px * AppState.scale;
+                        text: (AppState.tr("about.author")) + AppState.author;
+                        color: AppState.text;
+                        font-size: about-page.detail-font-size;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+
+                Rectangle {
+                    x: 0px;
+                    y: 126px * AppState.scale;
+                    width: 320px * AppState.scale;
+                    height: 112px * AppState.scale;
+                    border-radius: 8px * AppState.scale;
+                    background: AppState.window;
+
+                    Text {
+                        x: 12px * AppState.scale;
+                        y: 27px * AppState.scale;
+                        width: 136px * AppState.scale;
+                        height: 22px * AppState.scale;
+                        text: AppState.tr("about.slint_credit");
+                        color: AppState.accent;
+                        font-size: about-page.heading-font-size;
+                        font-weight: 600;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        x: 12px * AppState.scale;
+                        y: 53px * AppState.scale;
+                        width: 136px * AppState.scale;
+                        height: 32px * AppState.scale;
+                        text: AppState.tr("about.slint_description");
+                        color: AppState.muted;
+                        font-size: about-page.detail-font-size;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    Image {
+                        x: 192px * AppState.scale;
+                        y: 28px * AppState.scale;
+                        width: 96px * AppState.scale;
+                        height: 32px * AppState.scale;
+                        source: AppState.dark
+                            ? @image-url("../resources/icons/slint_logo_simple_dark.svg")
+                            : @image-url("../resources/icons/slint_logo_simple_light.svg");
+                        image-fit: contain;
+                    }
+
+                    Text {
+                        x: 166px * AppState.scale;
+                        y: 66px * AppState.scale;
+                        width: 148px * AppState.scale;
+                        height: 18px * AppState.scale;
+                        text: "Slint 1.17.1 · slint.dev";
+                        color: AppState.muted;
+                        font-size: about-page.link-font-size;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    TouchArea {
+                        x: 160px * AppState.scale;
+                        y: 0px;
+                        width: 160px * AppState.scale;
+                        height: parent.height;
+                        clicked => { focus-sink.focus(); AppState.open-slint(); }
+                    }
+                }
+
+                LinkCard {
+                    x: 0px;
+                    y: 244px * AppState.scale;
+                    width: about-page.footer-card-width;
+                    height: 32px * AppState.scale;
+                    text: AppState.tr("about.repository");
+                    clicked => { AppState.open-repository(); }
+                }
+
+                LinkCard {
+                    x: about-page.footer-card-width + 6px * AppState.scale;
+                    y: 244px * AppState.scale;
+                    width: about-page.footer-card-width;
+                    height: 32px * AppState.scale;
+                    text: AppState.tr("about.manual");
+                    clicked => { AppState.open-manual(); }
+                }
+
+                LinkCard {
+                    x: 2 * (about-page.footer-card-width + 6px * AppState.scale);
+                    y: 244px * AppState.scale;
+                    width: about-page.footer-card-width;
+                    height: 32px * AppState.scale;
+                    text: AppState.tr("about.licenses");
+                    clicked => { AppState.open-licenses(); }
+                }
+            }
+        }
+    }
+}
+
+export component CoordinateCaptureWindow inherits Window {
+    in property <int> screen-x;
+    in property <int> screen-y;
+    in property <bool> info-on-right;
+    in property <bool> info-on-bottom;
+    title: "Flori Input Coordinate Capture";
+    preferred-width: 240px;
+    preferred-height: 110px;
+    min-width: 240px;
+    max-width: 240px;
+    min-height: 110px;
+    max-height: 110px;
+    no-frame: true;
+    always-on-top: true;
+    // 透明度必须非零，否则 Windows 会将窗口的透明像素视为可点击穿透。
+    background: #00000001;
+    default-font-family: AppState.font;
+
+    TouchArea {
+        width: parent.width;
+        height: parent.height;
+        mouse-cursor: crosshair;
+    }
+
+    Rectangle {
+        x: root.info-on-right ? 18px : 10px;
+        y: root.info-on-bottom ? 18px : 10px;
+        width: 192px;
+        height: 54px;
+        background: AppState.row.with-alpha(0.95);
+        border-color: AppState.coordinate-border;
+        border-width: 1px;
+        border-radius: 7px;
+
+        Text {
+            x: 10px;
+            y: 5px;
+            width: parent.width - 20px;
+            height: 24px;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+            color: AppState.coordinate-text;
+            font-family: AppState.font;
+            font-size: 14px;
+            text: "X: " + root.screen-x + "    Y: " + root.screen-y;
+        }
+
+        Text {
+            x: 8px;
+            y: 30px;
+            width: parent.width - 16px;
+            height: 17px;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+            color: AppState.coordinate-text;
+            font-family: AppState.font;
+            font-size: 10px;
+            text: AppState.tr("coordinates.capture_hint");
+        }
+    }
+}

@@ -1,15 +1,18 @@
-<img src="assets/readme_header.svg" alt="FSClicker" width="100%">
+<p align="center"><img src="resources/icons/Flori-Input_transparent_dynamic.svg" alt="Flori Input" width="120"></p>
+
+<h1 align="center">Flori Input</h1>
+
+<p align="center">面向 Windows 的键鼠输入工具，支持重复输入、模拟粘贴和事件剧本。</p>
 
 <p align="center">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows&logoColor=white">
-  <img alt="Qt 6.11" src="https://img.shields.io/badge/Qt-6.11-41CD52?style=flat-square&logo=qt&logoColor=white">
   <img alt="C++23" src="https://img.shields.io/badge/C%2B%2B-23-00599C?style=flat-square&logo=cplusplus&logoColor=white">
-  <img alt="Vibe Coding" src="https://img.shields.io/badge/Vibe%20Coding-FF6B9A?style=flat-square">
+  <img alt="Slint" src="https://img.shields.io/badge/Slint-2379F4?style=flat-square&logo=Slint&logoColor=white">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-2DA44E?style=flat-square">
 </p>
 
 <p align="center">
-  中文 | <a href="README.en.md">English</a>
+  中文 · <a href="README.en.md">English</a>
 </p>
 
 <p align="center">
@@ -24,93 +27,73 @@
 
 ## 功能
 
-- 鼠标及自定义按键输入。
-- 连击与长按两种输入行为。
-- 固定坐标点击，可在屏幕上直接捕获坐标。
-- 周期输入，支持 `0% - 20%` 的动态误差。
+- [触发器](docs/features/trigger.md)：鼠标或键盘连击、长按与固定坐标输入。
+- [模拟粘贴](docs/features/paste.md)：在不支持粘贴的输入框中逐字输入文本。
+- [事件剧本](docs/features/event-script.md)：组合文字、按键、鼠标与循环操作。
+
+使用方法与完整命令说明见[中文用户手册](docs/index.md)。
 
 ## 下载
 
-已上架 Windows Package Manager，可通过 winget 安装：
+Flori Input 尚未正式发布。历史版 FSClicker 可从 [GitHub Releases](https://github.com/flowersauce/Flori-Input/releases)
+下载，或通过 winget 安装：
 
 ```powershell
 winget install Flowersauce.FSClicker
 ```
 
-也可以在 GitHub Releases 下载最新的 Windows 发布包：
-
-- 安装版：下载 `FSClicker-v<version>-windows-x64-setup.exe`，运行后会自动安装并显示安装进度。
-- 便携版：下载 `FSClicker-v<version>-windows-x64-portable.zip`，解压后运行 `FSClicker.exe`。
+上述包仍使用旧名称和旧功能；要体验当前开发版，请按下文从源码构建。
 
 ## 构建
 
-项目使用 Qt Quick 编写。
+项目使用 C++23、Slint 1.17.1 和 Win32；构建需要 Windows、CMake 3.30+、Visual Studio C++ x64 生成工具、Ninja、Slint C++ SDK 和
+vcpkg（Glaze 8.3.0）。
 
-需要：
+在 VS x64 开发环境中，将 `VCPKG_ROOT` 和 `SLINT_ROOT` 指向本机 vcpkg 与 Slint SDK 根目录，先安装 manifest 依赖：
 
-- Windows
-- CMake 3.30+
-- Qt 6.11+
-- MinGW
-- Python 3，用于发布打包
+```powershell
+& "$env:VCPKG_ROOT/vcpkg.exe" install --triplet x64-windows --x-install-root="$PWD/vcpkg_installed"
+```
 
 配置示例：
 
 ```powershell
-cmake -S . -B build -G Ninja `
-  -DCMAKE_PREFIX_PATH="$env:QT_ROOT"
+cmake -S . -B build/Release -G Ninja `
+  -DCMAKE_BUILD_TYPE=Release `
+  "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+  "-DVCPKG_INSTALLED_DIR=$PWD/vcpkg_installed" `
+  -DVCPKG_TARGET_TRIPLET=x64-windows `
+  -DVCPKG_MANIFEST_INSTALL=OFF `
+  -DCMAKE_PREFIX_PATH="$env:SLINT_ROOT"
 ```
 
 构建：
 
 ```powershell
-cmake --build build --target FSClicker
+cmake --build build/Release
 ```
 
 ## 打包
 
-先完成构建，再运行：
+从已有的 Release 构建生成便携包；默认读取 `build/Release`，不会自动编译，会覆盖本地同名产物：
 
 ```powershell
-python scripts/package_app.py
+python tools/release/package_app.py
 ```
 
-脚本会搜索名称包含 `build` 的构建目录，使用其中最新的 `FSClicker.exe`，并生成：
-
-```text
-output/release/FSClicker-v<version>-windows-x64-portable.zip
-output/release/FSClicker-v<version>-windows-x64-portable.zip.sha256
-```
-
-便携包和本地开发运行会把配置文件保存到程序目录下的 `config/config.json`。Velopack 安装版会把配置保存到安装根目录下的 `config/config.json`，以便更新时保留、卸载时随安装目录移除。
-
-默认发布包会包含必需的 MinGW/编译器运行时 DLL，不包含 Qt 翻译文件和软件 OpenGL 兜底库。需要 OpenGL 兼容性兜底时可以使用：
+生成安装版需安装 Velopack CLI（`vpk`），然后执行：
 
 ```powershell
-python scripts/package_app.py --keep-opengl-sw
+python tools/release/package_app.py --with-velopack
 ```
 
-如需同时生成 Velopack 安装版，先安装 Velopack CLI，再运行：
-
-```powershell
-python scripts/package_app.py --with-velopack
-```
-
-同时会生成：
-
-```text
-output/release/FSClicker-v<version>-windows-x64-setup.exe
-output/release/FSClicker-v<version>-windows-x64-setup.exe.sha256
-```
-
-不传参数直接运行脚本时，也可以按提示选择是否生成安装版。
-
-最终可直接上传到 GitHub Release 的产物会统一输出到：
-
-```text
-output/release/
-```
+产物位于 `output/release`；其它构建目录可用 `--build-dir` 指定。发布前应在干净的 Windows
+环境验证运行与安装。配置和剧本的保存位置见[安装与更新](docs/getting-started/installation.md)。
 
 ## 许可
 
 Copyright © 2024 Flowersauce
+
+Flori Input 使用 [MIT 许可证](LICENSE)；第三方组件见[许可说明](docs/legal/third-party.md)。
+
+<a href="https://slint.dev"><img alt="#MadeWithSlint" src="https://raw.githubusercontent.com/slint-ui/slint/master/logo/MadeWithSlint-logo-whitebg.png" height="24"></a>

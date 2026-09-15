@@ -1,0 +1,4 @@
+#include <windows.h>
+1 ICON "icons/Flori-Input.ico"
+201 RCDATA "sounds/open.wav"
+202 RCDATA "sounds/close.wav"

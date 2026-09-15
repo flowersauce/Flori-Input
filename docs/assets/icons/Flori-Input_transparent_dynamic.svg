@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+    <!-- 涟漪：严格同心 -->
+    <circle class="ripple ripple1" cx="512" cy="512" r="244.000" fill="none" stroke="#61AFEF" stroke-width="48.800"
+            opacity="0.30"/>
+    <circle class="ripple ripple2" cx="512" cy="512" r="326.960" fill="none" stroke="#61AFEF" stroke-width="39.040"
+            opacity="0.22"/>
+    <circle class="ripple ripple3" cx="512" cy="512" r="400.160" fill="none" stroke="#61AFEF" stroke-width="29.280"
+            opacity="0.15"/>
+    <circle class="ripple ripple4" cx="512" cy="512" r="463.600" fill="none" stroke="#61AFEF" stroke-width="19.520"
+            opacity="0.10"/>
+
+    <!-- 最外层五环：严格正五边形分布 -->
+    <g stroke="#F2B8B8" stroke-width="5.856" fill="none" opacity="0.96">
+        <circle cx="512.000" cy="346.080" r="131.760"/>
+        <circle cx="669.799" cy="460.728" r="131.760"/>
+        <circle cx="609.525" cy="646.232" r="131.760"/>
+        <circle cx="414.475" cy="646.232" r="131.760"/>
+        <circle cx="354.201" cy="460.728" r="131.760"/>
+    </g>
+
+    <!-- 花瓣主体：严格正五边形分布 -->
+    <g fill="#DCA5A5">
+        <circle cx="512.000" cy="346.080" r="117.120"/>
+        <circle cx="669.799" cy="460.728" r="117.120"/>
+        <circle cx="609.525" cy="646.232" r="117.120"/>
+        <circle cx="414.475" cy="646.232" r="117.120"/>
+        <circle cx="354.201" cy="460.728" r="117.120"/>
+        <circle cx="512.000" cy="512.000" r="117.120"/>
+    </g>
+
+    <!-- 花蕊：严格正五边形分布 -->
+    <g fill="#F6DDD6" opacity="0.55">
+        <circle cx="512.000" cy="458.320" r="56.120"/>
+        <circle cx="563.053" cy="495.412" r="56.120"/>
+        <circle cx="543.552" cy="555.428" r="56.120"/>
+        <circle cx="480.448" cy="555.428" r="56.120"/>
+        <circle cx="460.947" cy="495.412" r="56.120"/>
+    </g>
+
+    <!-- 中央高光点：严格位于中心 -->
+    <circle cx="512.000" cy="512.000" r="32.208" fill="#F3E7E2" opacity="0.95"/>
+    <style><![CDATA[
+@keyframes rippleBreath1 {
+  0%,100% { transform: scale(1); opacity: .28; }
+  50% { transform: scale(1.075); opacity: .48; }
+}
+@keyframes rippleBreath2 {
+  0%,100% { transform: scale(1); opacity: .20; }
+  50% { transform: scale(1.065); opacity: .36; }
+}
+@keyframes rippleBreath3 {
+  0%,100% { transform: scale(1); opacity: .13; }
+  50% { transform: scale(1.055); opacity: .26; }
+}
+@keyframes rippleBreath4 {
+  0%,100% { transform: scale(1); opacity: .08; }
+  50% { transform: scale(1.045); opacity: .20; }
+}
+.ripple {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.ripple1 { animation: rippleBreath1 4.8s ease-in-out infinite; }
+.ripple2 { animation: rippleBreath2 4.8s ease-in-out .35s infinite; }
+.ripple3 { animation: rippleBreath3 4.8s ease-in-out .7s infinite; }
+.ripple4 { animation: rippleBreath4 4.8s ease-in-out 1.05s infinite; }
+]]></style>
+</svg>

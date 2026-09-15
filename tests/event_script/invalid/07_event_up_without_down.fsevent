@@ -1,0 +1,2 @@
+// 预期：静态校验拒绝没有配对 Down 的 Up。
+event(Key.Shift, Up);

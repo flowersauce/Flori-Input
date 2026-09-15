@@ -1,0 +1,6 @@
+// 基本输入：Unicode 文本、单键与组合键。
+text("Flori Input 中文🙂", 5, 10);
+stroke(Key.Tab, 5);
+text("OK", 5, 10);
+stroke(Key.Shift, Key.A, 5);
+stroke(Key.Enter, 5);

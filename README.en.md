@@ -1,22 +1,25 @@
-<img src="assets/readme_header.svg" alt="FSClicker" width="100%">
+<p align="center"><img src="resources/icons/Flori-Input_transparent_dynamic.svg" alt="Flori Input" width="120"></p>
+
+<h1 align="center">Flori Input</h1>
+
+<p align="center">A Windows input automation tool supporting repeated input, simulated paste, and event scripts.</p>
 
 <p align="center">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows&logoColor=white">
-  <img alt="Qt 6.11" src="https://img.shields.io/badge/Qt-6.11-41CD52?style=flat-square&logo=qt&logoColor=white">
   <img alt="C++23" src="https://img.shields.io/badge/C%2B%2B-23-00599C?style=flat-square&logo=cplusplus&logoColor=white">
-  <img alt="Vibe Coding" src="https://img.shields.io/badge/Vibe%20Coding-FF6B9A?style=flat-square">
+  <img alt="Slint" src="https://img.shields.io/badge/Slint-2379F4?style=flat-square&logo=Slint&logoColor=white">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-2DA44E?style=flat-square">
 </p>
 
 <p align="center">
-  <a href="README.md">中文</a> | English
+  <a href="README.md">中文</a> · English
 </p>
 
 <p align="center">
   <a href="#features">Features</a> ·
   <a href="#download">Download</a> ·
   <a href="#build">Build</a> ·
-  <a href="#package">Package</a> ·
+  <a href="#packaging">Packaging</a> ·
   <a href="#license">License</a>
 </p>
 
@@ -24,94 +27,79 @@
 
 ## Features
 
-- Mouse and custom key input.
-- Repeat and hold input modes.
-- Locked-position clicking with screen coordinate capture.
-- Period-based input with `0% - 20%` dynamic jitter.
+- [Trigger](docs/features/trigger.en.md): Mouse or keyboard repeated actions, long press, and fixed coordinate input.
+- [Simulated Paste](docs/features/paste.en.md): Type text character by character in input fields that do not support
+  pasting.
+- [Event Script](docs/features/event-script.en.md): Combine text, key, mouse, and loop operations.
+
+See the [English User Manual](docs/index.en.md) for usage instructions and complete command documentation.
 
 ## Download
 
-FSClicker is available from Windows Package Manager:
+Flori Input has not been officially released yet. The previous version FSClicker can be downloaded
+from [GitHub Releases](https://github.com/flowersauce/Flori-Input/releases), or installed via winget:
 
 ```powershell
 winget install Flowersauce.FSClicker
 ```
 
-You can also download the latest Windows packages from GitHub Releases:
-
-- Installer: download `FSClicker-v<version>-windows-x64-setup.exe`, then run it to install automatically with a progress window.
-- Portable: download `FSClicker-v<version>-windows-x64-portable.zip`, extract it, and run `FSClicker.exe`.
+The package above still uses the old name and old features. To try the current development version, build it from source
+using the instructions below.
 
 ## Build
 
-The app is built with Qt Quick.
+The project uses C++23, Slint 1.17.1, and Win32. Building requires Windows, CMake 3.30+, Visual Studio C++ x64 build
+tools, Ninja, Slint C++ SDK, and vcpkg (Glaze 8.3.0).
 
-Requirements:
-
-- Windows
-- CMake 3.30+
-- Qt 6.11+
-- MinGW
-- Python 3 for release packaging
-
-Configure:
+In a VS x64 developer environment, set `VCPKG_ROOT` and `SLINT_ROOT` to your local vcpkg and Slint SDK root directories,
+then install manifest dependencies:
 
 ```powershell
-cmake -S . -B build -G Ninja `
-  -DCMAKE_PREFIX_PATH="$env:QT_ROOT"
+& "$env:VCPKG_ROOT/vcpkg.exe" install --triplet x64-windows --x-install-root="$PWD/vcpkg_installed"
+```
+
+Configuration example:
+
+```powershell
+cmake -S . -B build/Release -G Ninja `
+  -DCMAKE_BUILD_TYPE=Release `
+  "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+  "-DVCPKG_INSTALLED_DIR=$PWD/vcpkg_installed" `
+  -DVCPKG_TARGET_TRIPLET=x64-windows `
+  -DVCPKG_MANIFEST_INSTALL=OFF `
+  -DCMAKE_PREFIX_PATH="$env:SLINT_ROOT"
 ```
 
 Build:
 
 ```powershell
-cmake --build build --target FSClicker
+cmake --build build/Release
 ```
 
-## Package
+## Packaging
 
-Build the app first, then run:
+Generate a portable package from an existing Release build. It reads from `build/Release` by default, does not build
+automatically, and overwrites local artifacts with the same name:
 
 ```powershell
-python scripts/package_app.py
+python tools/release/package_app.py
 ```
 
-The script searches build directories whose names contain `build`, uses the newest `FSClicker.exe`, and creates:
-
-```text
-output/release/FSClicker-v<version>-windows-x64-portable.zip
-output/release/FSClicker-v<version>-windows-x64-portable.zip.sha256
-```
-
-Portable packages and local development runs store configuration at `config/config.json` inside the app directory. Velopack builds store configuration in `config/config.json` under the installation root, so it survives updates and is removed with the installation.
-
-By default, the package includes the required MinGW/compiler runtime DLLs, and excludes Qt translations and the
-software OpenGL fallback library. Use this when you want the OpenGL fallback:
+To generate an installer package, install the Velopack CLI (`vpk`) first, then run:
 
 ```powershell
-python scripts/package_app.py --keep-opengl-sw
+python tools/release/package_app.py --with-velopack
 ```
 
-To generate the Velopack installer package at the same time, install the Velopack CLI first, then run:
-
-```powershell
-python scripts/package_app.py --with-velopack
-```
-
-This also creates:
-
-```text
-output/release/FSClicker-v<version>-windows-x64-setup.exe
-output/release/FSClicker-v<version>-windows-x64-setup.exe.sha256
-```
-
-When running the script without arguments, you can also choose whether to generate the installer in the prompt.
-
-Final GitHub Release artifacts are written to:
-
-```text
-output/release/
-```
+Artifacts are located in `output/release`. Other build directories can be specified with `--build-dir`. Before release,
+verify the application runs and installs correctly in a clean Windows environment. Configuration and script storage
+locations are described in [Installation and Updates](docs/getting-started/installation.en.md).
 
 ## License
 
 Copyright © 2024 Flowersauce
+
+Flori Input uses the [MIT License](LICENSE). Third-party components are listed in
+the [License Information](docs/legal/third-party.en.md).
+
+<a href="https://slint.dev"><img alt="#MadeWithSlint" src="https://raw.githubusercontent.com/slint-ui/slint/master/logo/MadeWithSlint-logo-whitebg.png" height="24"></a>

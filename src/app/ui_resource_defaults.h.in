@@ -1,0 +1,13 @@
+#ifndef FLORI_INPUT_APP_UI_RESOURCE_DEFAULTS_H
+#define FLORI_INPUT_APP_UI_RESOURCE_DEFAULTS_H
+
+#include <string_view>
+
+namespace flori_input::defaults {
+inline constexpr std::string_view dark = R"FLORI_UI(@UI_DARK@)FLORI_UI";
+inline constexpr std::string_view light = R"FLORI_UI(@UI_LIGHT@)FLORI_UI";
+inline constexpr std::string_view zh = R"FLORI_UI(@UI_ZH@)FLORI_UI";
+inline constexpr std::string_view en = R"FLORI_UI(@UI_EN@)FLORI_UI";
+}
+
+#endif // FLORI_INPUT_APP_UI_RESOURCE_DEFAULTS_H

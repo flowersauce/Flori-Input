@@ -1,0 +1,2 @@
+// 预期：选择时即拒绝末尾未配对的 Shift，不注入输入。
+event(Key.Shift, Down);
