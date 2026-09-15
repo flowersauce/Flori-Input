@@ -10,38 +10,14 @@ permissions:
 
 jobs:
   release:
-    name: Build and Release
-    runs-on: windows-latest
+    name: Create Release
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Configure CMake
-        run: |
-          cmake --preset release
-
-      - name: Build
-        run: |
-          cmake --build --preset release
-
-      - name: Package
-        run: |
-          uv run python tools/release/package_app.py --with-velopack
+        uses: actions/checkout@v5
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            output/release/*
+          body_path: CHANGELOG.md
