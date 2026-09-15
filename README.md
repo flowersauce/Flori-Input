@@ -2,7 +2,7 @@
 
 <h1 align="center">Flori Input</h1>
 
-<p align="center">面向 Windows 的键鼠输入工具，支持重复输入、模拟粘贴和事件剧本。</p>
+<p align="center">面向 Windows 的键鼠输入工具，支持重复输入、模拟粘贴和事件剧本。由 FSClicker 演进而来，并基于 Slint UI 重构。</p>
 
 <p align="center">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows&logoColor=white">
@@ -35,14 +35,22 @@
 
 ## 下载
 
-Flori Input 尚未正式发布。历史版 FSClicker 可从 [GitHub Releases](https://github.com/flowersauce/Flori-Input/releases)
-下载，或通过 winget 安装：
+Flori Input 提供 Windows x64 安装版和便携版，可从 [GitHub Releases](https://github.com/flowersauce/Flori-Input/releases) 下载。
+
+也可通过 winget 安装或更新：
 
 ```powershell
-winget install Flowersauce.FSClicker
+winget install --id Flowersauce.FSClicker --exact --source winget
+winget upgrade --id Flowersauce.FSClicker --exact --source winget
 ```
 
-上述包仍使用旧名称和旧功能；要体验当前开发版，请按下文从源码构建。
+包标识沿用 `Flowersauce.FSClicker`，软件名称为 Flori Input。1.4.0 起的 winget 清单声明了
+`Microsoft.VCRedist.2015+.x64` 依赖，由 winget 处理运行库安装。winget 收录更新可能晚于 GitHub Release；最新版本以 Releases 为准。
+
+**直接下载安装器或便携包时**，请先安装最新的 [Microsoft Visual C++ v14 Redistributable（x64）](https://aka.ms/vc14/vc_redist.x64.exe)。
+这两个下载包不包含 VC++ 运行库；已安装最新 x64 运行库的用户无需重复安装。
+
+安装步骤、更新方式与配置保存位置见[安装与更新](docs/getting-started/installation.md)。
 
 ## 构建
 

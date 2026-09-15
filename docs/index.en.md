@@ -1,6 +1,8 @@
 # Flori Input User Manual
 
-Flori Input is a Windows keyboard and mouse input tool for repeated input, simulated paste, and event scripts.
+Flori Input is a Windows keyboard and mouse input automation tool supporting repeated input, simulated paste, and event
+scripts.
+Evolved from FSClicker and rebuilt with the Slint UI framework.
 
 ## Getting started
 

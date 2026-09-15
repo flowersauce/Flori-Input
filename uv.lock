@@ -183,7 +183,7 @@ wheels = [
 ]
 
 [[package]]
-name = "flori-input"
+name = "flori-input-tools"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

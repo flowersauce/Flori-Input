@@ -1,9 +1,0 @@
-// 预期输出两行 ABB。零按压与零字符间隔不等于 wait(0)。
-repeat(2) {
-    text("A", 0, 0);
-    repeat(2) {
-        text("B", 5, 0);
-        wait(20);
-    }
-    stroke(Key.Enter, 5);
-}

@@ -1,0 +1,27 @@
+// 场景一：在空白记事本中生成多语言测试卡，约 10 秒后自动结束。
+// 先点击空白文档，再按启动热键（默认 F8）。
+// 覆盖 text、stroke、wait、有限 repeat 与嵌套 repeat。
+wait(500);
+text("=== Flori Input 测试卡 ===", 5, 20);
+stroke(Key.Enter, 20);
+text("你好，世界！Hello, world! 🙂", 5, 30);
+stroke(Key.Enter, 20);
+text("引号：""Hello""；反斜杠原样输入：\n", 5, 20);
+stroke(Key.Enter, 20);
+stroke(Key.Enter, 20);
+
+repeat(3) {
+    text("[完成]", 5, 20);
+    stroke(Key.Tab, 20);
+    repeat(3) {
+        text("★", 5, 80);
+    }
+    stroke(Key.Enter, 20);
+    wait(200);
+}
+
+text("测试完成：光标将回到文档开头，再回到末尾。", 5, 20);
+stroke(Key.Enter, 20);
+stroke(Key.Ctrl, Key.Home, 30);
+wait(800);
+stroke(Key.Ctrl, Key.End, 30);

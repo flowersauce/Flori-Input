@@ -1,6 +1,7 @@
 # Licenses
 
-Flori Input itself is licensed under the [MIT License](https://github.com/flowersauce/Flori-Input/blob/HEAD/LICENSE). It permits use, copying, modification, and
+Flori Input itself is licensed under the [MIT License](https://github.com/flowersauce/Flori-Input/blob/HEAD/LICENSE). It
+permits use, copying, modification, and
 distribution, provided that the copyright and license notice are retained on redistribution. Refer to the license text
 for the exact terms.
 

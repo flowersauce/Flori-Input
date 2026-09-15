@@ -993,10 +993,19 @@ namespace flori_input
 				runtime.update([&](auto &controller) { controller.beginCapture(static_cast<Capture>(kind)); });
 			});
 		state.on_open_repository([] { platform::WindowIntegration::openLink(L"https://github.com/flowersauce/Flori-Input"); });
-		state.on_open_manual([] { platform::WindowIntegration::openLink(L"https://github.com/flowersauce/Flori-Input/blob/main/docs/index.md"); });
+		state.on_open_manual(
+			[&]
+			{
+				platform::WindowIntegration::openLink(config.language() == "zh" ? L"https://flowersauce.github.io/Flori-Input/"
+																					  : L"https://flowersauce.github.io/Flori-Input/en/");
+			});
 		state.on_open_slint([] { platform::WindowIntegration::openLink(L"https://slint.dev"); });
 		state.on_open_licenses(
-			[] { platform::WindowIntegration::openLink(L"https://github.com/flowersauce/Flori-Input/blob/main/docs/legal/third-party.md"); });
+			[&]
+			{
+				platform::WindowIntegration::openLink(config.language() == "zh" ? L"https://flowersauce.github.io/Flori-Input/legal/third-party/"
+																					  : L"https://flowersauce.github.io/Flori-Input/en/legal/third-party/");
+			});
 		auto close = [&]
 		{
 			if (closing)

@@ -1,6 +1,0 @@
-// 第一轮合法，第二轮 Down 冲突；选择时必须拒绝。
-repeat(2) {
-    event(Key.Shift, Down);
-    wait(10);
-}
-event(Key.Shift, Up);

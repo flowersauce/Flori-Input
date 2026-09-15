@@ -1,10 +1,11 @@
 # Flori Input 用户手册
 
 Flori Input 是一款面向 Windows 的键鼠输入工具，支持重复输入、模拟粘贴和事件剧本。
+该项目由 FSClicker 演进而来，并基于 Slint UI 重构。
 
 ## 入门
 
-- [安装与更新](getting-started/installation.md)：选择安装版或便携版，了解配置保存位置。
+- [安装与更新](getting-started/installation.md)：通过 winget、安装器或便携包安装，了解运行库要求与配置保存位置。
 - [快速开始](getting-started/quick-start.md)：用三个小例子体验主要功能。
 
 ## 功能

@@ -1,8 +1,0 @@
-// 预期：校验通过；按住 Shift 跨越循环，循环内先释放再按下，最终在循环外释放。
-event(Key.Shift, Down);
-repeat(2) {
-    event(Key.Shift, Up);
-    wait(10);
-    event(Key.Shift, Down);
-}
-event(Key.Shift, Up);

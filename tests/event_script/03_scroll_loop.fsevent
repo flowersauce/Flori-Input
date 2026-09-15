@@ -1,0 +1,29 @@
+// 场景三：生成长文档，然后反复向下、向上滚动，直到再次按 F8。
+// 使用空白记事本，窗口高度建议不超过 20 行；鼠标始终放在正文区域。
+// 按 F8 后先花数秒生成 60 行正文，随后开始滚动。
+// 覆盖 text、stroke、wait、wheel、有限 repeat 和无限 repeat。
+wait(500);
+text("Flori Input 滚动演示：再次按启动热键停止。", 0, 5);
+stroke(Key.Enter, 10);
+repeat(30) {
+    text("---- 向下浏览 / Scroll down ----", 0, 2);
+    stroke(Key.Enter, 10);
+    text(".... 向上回看 / Scroll up   ....", 0, 2);
+    stroke(Key.Enter, 10);
+}
+text("文档末尾 / End of document", 0, 5);
+stroke(Key.Ctrl, Key.Home, 30);
+wait(1000);
+
+repeat(-1) {
+    repeat(8) {
+        wheel(-1);
+        wait(250);
+    }
+    wait(800);
+    repeat(8) {
+        wheel(1);
+        wait(250);
+    }
+    wait(800);
+}

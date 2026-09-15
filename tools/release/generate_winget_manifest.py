@@ -23,6 +23,7 @@ PUBLISHER = "Flowersauce"
 PACKAGE_ID_SUFFIX = "FSClicker"  # 保留已发布的安装身份，避免破坏升级路径。
 PACKAGE_IDENTIFIER = f"{PUBLISHER}.{PACKAGE_ID_SUFFIX}"
 WINDOWS_X64_SUFFIX = "windows-x64"
+VC_RUNTIME_PACKAGE = "Microsoft.VCRedist.2015+.x64"
 MANIFEST_VERSION = "1.12.0"
 MANIFEST_SCHEMA_VERSION = "1.12.0"
 DEFAULT_LOCALE = "en-US"
@@ -52,7 +53,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--publisher-url", default="https://github.com/flowersauce", help="Publisher homepage URL.")
     parser.add_argument("--publisher-support-url", default=f"{REPO_URL}/issues",
                         help="Publisher support URL.")
-    parser.add_argument("--license-url", default=f"{REPO_URL}/blob/main/LICENSE", help="License URL.")
+    parser.add_argument("--license-url", default=f"{REPO_URL}/blob/HEAD/LICENSE", help="License URL.")
     return parser.parse_args()
 
 
@@ -135,6 +136,9 @@ def build_installer_manifest(version: str, installer_url: str, installer_sha256:
         f"PackageIdentifier: {PACKAGE_IDENTIFIER}\n"
         f"PackageVersion: {version}\n"
         f"InstallerType: exe\n"
+        f"Dependencies:\n"
+        f"  PackageDependencies:\n"
+        f"  - PackageIdentifier: {VC_RUNTIME_PACKAGE}\n"
         f"Scope: user\n"
         f"InstallModes:\n"
         f"- silent\n"
@@ -161,7 +165,7 @@ def build_installer_manifest(version: str, installer_url: str, installer_sha256:
 
 
 def build_locale_manifest(version: str, package_url: str, publisher_url: str, publisher_support_url: str,
-                         license_url: str, release_notes_url: str) -> str:
+                          license_url: str, release_notes_url: str) -> str:
     return schema_header("defaultLocale") + (
         f"PackageIdentifier: {PACKAGE_IDENTIFIER}\n"
         f"PackageVersion: {version}\n"
@@ -173,11 +177,12 @@ def build_locale_manifest(version: str, package_url: str, publisher_url: str, pu
         f"PackageUrl: {package_url}\n"
         f"License: MIT\n"
         f"LicenseUrl: {license_url}\n"
-        f"ShortDescription: A lightweight input automation tool for Windows.\n"
+        f"ShortDescription: A Windows keyboard and mouse input automation tool.\n"
         f"Tags:\n"
-        f"- auto-clicker\n"
-        f"- clicker\n"
         f"- input\n"
+        f"- automation\n"
+        f"- keyboard\n"
+        f"- mouse\n"
         f"- windows\n"
         f"ReleaseNotesUrl: {release_notes_url}\n"
         f"ManifestType: defaultLocale\n"

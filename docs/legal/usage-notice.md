@@ -6,5 +6,6 @@ Flori Input 是本地键鼠输入工具。使用前，请确认自己有权操�
 
 自动输入会作用于当前目标窗口。启动前请核对目标、输入内容和停止热键，并先在安全窗口验证剧本或连续输入的效果。
 
-本说明阐明项目用途与使用风险，不修改 [MIT 许可证](https://github.com/flowersauce/Flori-Input/blob/HEAD/LICENSE)；软件的许可和责任条款以许可证原文为准。
+本说明阐明项目用途与使用风险，不修改 [MIT 许可证](https://github.com/flowersauce/Flori-Input/blob/HEAD/LICENSE)
+；软件的许可和责任条款以许可证原文为准。
 

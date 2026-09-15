@@ -2,7 +2,7 @@
 
 <h1 align="center">Flori Input</h1>
 
-<p align="center">A Windows input automation tool supporting repeated input, simulated paste, and event scripts.</p>
+<p align="center">A Windows keyboard and mouse input automation tool supporting repeated input, simulated paste, and event scripts. Evolved from FSClicker and rebuilt with Slint UI.</p>
 
 <p align="center">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows&logoColor=white">
@@ -36,15 +36,23 @@ See the [English User Manual](docs/index.en.md) for usage instructions and compl
 
 ## Download
 
-Flori Input has not been officially released yet. The previous version FSClicker can be downloaded
-from [GitHub Releases](https://github.com/flowersauce/Flori-Input/releases), or installed via winget:
+Flori Input provides Windows x64 installer and portable packages on [GitHub Releases](https://github.com/flowersauce/Flori-Input/releases).
+
+You can also install or update it with winget:
 
 ```powershell
-winget install Flowersauce.FSClicker
+winget install --id Flowersauce.FSClicker --exact --source winget
+winget upgrade --id Flowersauce.FSClicker --exact --source winget
 ```
 
-The package above still uses the old name and old features. To try the current development version, build it from source
-using the instructions below.
+The package identifier remains `Flowersauce.FSClicker`; the application is named Flori Input. Starting with 1.4.0,
+the winget manifest declares `Microsoft.VCRedist.2015+.x64` as a dependency, so winget handles runtime installation.
+Updates may reach winget after the GitHub Release; check Releases for the latest version.
+
+**For direct installer or portable downloads**, first install the latest [Microsoft Visual C++ v14 Redistributable (x64)](https://aka.ms/vc14/vc_redist.x64.exe).
+Neither download bundles the VC++ runtime. If the latest x64 runtime is already installed, you do not need to install it again.
+
+See [Installation and Updates](docs/getting-started/installation.en.md) for setup, updates, and configuration locations.
 
 ## Build
 
