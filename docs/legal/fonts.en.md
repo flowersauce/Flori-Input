@@ -25,3 +25,4 @@ Both source fonts use the [SIL Open Font License 1.1](https://openfontlicense.or
 permits embedding and distributing modified fonts while requiring the relevant copyright notices and license to be
 retained. The source-project links above provide the original notices and full texts.
 See [Third-party Components](third-party.en.md) for the other bundled components.
+

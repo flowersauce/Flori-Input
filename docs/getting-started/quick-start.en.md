@@ -29,3 +29,4 @@ hotkey, but **only the current input page responds**. Changing pages while a tas
 
 If the status bar shows an error, check the target window, hotkey, and script file. Do not first try automation in a
 window with unsaved work or where an unintended action could be harmful.
+

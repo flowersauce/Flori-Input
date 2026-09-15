@@ -10,4 +10,5 @@ Automated input affects the current target window. Before starting, check the ta
 and test scripts or repeated input in a safe window first.
 
 This notice explains the project's intended use and associated risks. It does not change
-the [MIT License](../../LICENSE); the license text governs the software's licensing and liability terms.
+the [MIT License](https://github.com/flowersauce/Flori-Input/blob/HEAD/LICENSE); the license text governs the software's licensing and liability terms.
+

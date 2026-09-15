@@ -27,3 +27,4 @@ Flori Input is a Windows keyboard and mouse input tool for repeated input, simul
 - [Flori Input license](legal/licenses.en.md)
 - [Third-party components](legal/third-party.en.md) and [font licenses](legal/fonts.en.md)
 - [Copyright and attribution](legal/copyright.en.md)
+

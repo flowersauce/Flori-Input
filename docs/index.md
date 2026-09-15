@@ -23,3 +23,4 @@ Flori Input 是一款面向 Windows 的键鼠输入工具，支持重复输入�
 - [Flori Input 许可证](legal/licenses.md)
 - [第三方组件](legal/third-party.md)与[字体许可](legal/fonts.md)
 - [版权与署名](legal/copyright.md)
+

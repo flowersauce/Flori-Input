@@ -20,3 +20,4 @@ The interface language does not change event-script command names; commands are 
 ## Scale
 
 Choose `100%`, `125%`, or `150%` to adjust the Flori Input interface size.
+

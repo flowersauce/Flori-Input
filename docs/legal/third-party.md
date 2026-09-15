@@ -10,3 +10,4 @@ Flori Input 本体的许可见[许可证](licenses.md)。以下组件及素材�
 | Slint 标识素材                                       | 关于页的 Slint 图形    | 来源于 Slint 项目；素材许可与使用条件见 [CC BY-ND 4.0](https://creativecommons.org/licenses/by-nd/4.0/)。                                                                                                                                   |
 
 Windows 及 Microsoft 运行时库适用 Microsoft 的相关条款。本页是用户查找许可来源的入口，不替代各上游的正式许可文本。
+

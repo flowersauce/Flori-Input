@@ -166,3 +166,4 @@ To prevent unexpectedly long runs, a finite script is limited to 100,000 steps b
 actions may run consecutively without a positive-time wait. If a limit is exceeded, the app stops and attempts to
 release held inputs. For an indefinite loop, include a reasonable `wait` and make sure the start hotkey can stop it at
 any time.
+

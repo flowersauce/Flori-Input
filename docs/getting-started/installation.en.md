@@ -31,3 +31,4 @@ The actual installation location depends on how the app was installed. To find i
 **Script** page. Its parent is the installation root; `config\config.jsonc` is alongside `scripts`. Because `config` and
 `scripts` are outside `current`, an installer update does not replace them with the version directory. Keep copies of
 both directories when backing up your settings and scripts.
+

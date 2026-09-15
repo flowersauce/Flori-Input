@@ -32,3 +32,4 @@ and system load; the configured values do not guarantee an exact clicks-per-seco
 Press the start hotkey again while running to stop. The status bar at the bottom of the page shows running and error
 states. On stop, the app attempts to release any held inputs. Confirm the hotkey and input behavior in a safe window
 before using them in a game or another app.
+

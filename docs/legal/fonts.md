@@ -20,3 +20,4 @@ Google 的部分字形；请以 [Sarasa Gothic 的许可证原文](https://githu
 
 两款来源字体均采用 [SIL Open Font License 1.1](https://openfontlicense.org/open-font-license-official-text/)
 。该许可允许在软件中嵌入和分发修改后的字体，同时要求保留相应版权声明及许可证；上面的源项目页面提供原始声明和全文。其他第三方组件见[第三方组件](third-party.md)。
+

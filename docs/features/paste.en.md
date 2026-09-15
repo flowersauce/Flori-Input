@@ -32,3 +32,4 @@ extra wait before or after the text. Both fields allow `0.000`.
 
 For example, with `ABC` and an Interval of `0.100` seconds, the app waits once between A and B and once between B and C,
 but not after C.
+
