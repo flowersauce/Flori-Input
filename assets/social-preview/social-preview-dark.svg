@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title description">
+  <title id="title">Flori Input 深色主题 — 面向 Windows 的开源键鼠自动化工具</title>
+  <desc id="description">使用仓库 FloriInputUI 字体的深色主题社交预览。</desc>
+  <style>
+    @font-face { font-family: "FloriInputUI"; src: url("../resources/fonts/FloriInputUI-Medium.ttf") format("truetype"); font-style: normal; font-weight: 500; }
+    text { font-family: "FloriInputUI"; font-weight: 500; }
+  </style>
+  <rect width="1280" height="640" fill="#21252b"/>
+  <g transform="translate(80 78)">
+    <text x="0" y="128" fill="#ffffff" font-size="78">Flori Input</text>
+    <text x="2" y="205" fill="#f1f3f6" font-size="32">面向 Windows 的开源键鼠自动化工具</text>
+    <text x="2" y="257" fill="#aeb6c3" font-size="22">基于 Slint UI 构建，运行时内存占用仅约 20 MiB</text>
+    <g transform="translate(0 319)" font-size="19">
+      <g><rect width="174" height="46" rx="23" fill="#282c34" stroke="#3e4451"/><circle cx="23" cy="23" r="7" fill="#61afef"/><text x="43" y="30" fill="#ffffff">高速按键输入</text></g>
+      <g transform="translate(188 0)"><rect width="174" height="46" rx="23" fill="#282c34" stroke="#3e4451"/><circle cx="23" cy="23" r="7" fill="#dca5a5"/><text x="43" y="30" fill="#ffffff">文本模拟输入</text></g>
+      <g transform="translate(376 0)"><rect width="196" height="46" rx="23" fill="#282c34" stroke="#3e4451"/><circle cx="23" cy="23" r="7" fill="#98c379"/><text x="43" y="30" fill="#ffffff">自动化事件编排</text></g>
+    </g>
+    <g transform="translate(0 442)"><circle cx="8" cy="23" r="6" fill="#c678dd"/><text x="28" y="30" fill="#aeb6c3" font-size="19">github.com/flowersauce/Flori-Input</text></g>
+  </g>
+  <g transform="translate(742 78) scale(0.46875)" aria-label="Flori Input 透明底 Logo">
+    <circle cx="512" cy="512" r="244" fill="none" stroke="#61afef" stroke-width="48.8" opacity="0.30"/><circle cx="512" cy="512" r="326.96" fill="none" stroke="#61afef" stroke-width="39.04" opacity="0.22"/><circle cx="512" cy="512" r="400.16" fill="none" stroke="#61afef" stroke-width="29.28" opacity="0.15"/><circle cx="512" cy="512" r="463.6" fill="none" stroke="#61afef" stroke-width="19.52" opacity="0.10"/>
+    <g stroke="#f2b8b8" stroke-width="5.856" fill="none" opacity="0.96"><circle cx="512" cy="346.08" r="131.76"/><circle cx="669.799" cy="460.728" r="131.76"/><circle cx="609.525" cy="646.232" r="131.76"/><circle cx="414.475" cy="646.232" r="131.76"/><circle cx="354.201" cy="460.728" r="131.76"/></g>
+    <g fill="#dca5a5"><circle cx="512" cy="346.08" r="117.12"/><circle cx="669.799" cy="460.728" r="117.12"/><circle cx="609.525" cy="646.232" r="117.12"/><circle cx="414.475" cy="646.232" r="117.12"/><circle cx="354.201" cy="460.728" r="117.12"/><circle cx="512" cy="512" r="117.12"/></g>
+    <g fill="#f6ddd6" opacity="0.55"><circle cx="512" cy="458.32" r="56.12"/><circle cx="563.053" cy="495.412" r="56.12"/><circle cx="543.552" cy="555.428" r="56.12"/><circle cx="480.448" cy="555.428" r="56.12"/><circle cx="460.947" cy="495.412" r="56.12"/></g>
+    <circle cx="512" cy="512" r="32.208" fill="#f3e7e2" opacity="0.95"/>
+  </g>
+</svg>
