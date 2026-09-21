@@ -24,6 +24,8 @@ during installation.
 New releases may take time to appear in the winget source. If the desired version is not listed yet, use the installer
 from GitHub Releases.
 
+Flori Input uses a per-user installation. Installing or updating the system-wide VC++ runtime may prompt for administrator approval (UAC). If winget finds the required runtime already installed, that dependency does not need to be installed again.
+
 ## Runtime for direct downloads
 
 Before using an installer or portable ZIP downloaded from Releases, install the latest

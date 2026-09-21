@@ -21,6 +21,8 @@ winget upgrade --id Flowersauce.FSClicker --exact --source winget
 1.4.0 起的清单声明了 `Microsoft.VCRedist.2015+.x64` 运行库依赖，安装时由 winget 处理。
 新版本收录到 winget 可能晚于 GitHub Release；若尚未查到目标版本，可从 Releases 下载安装版。
 
+Flori Input 本体按当前用户安装；VC++ 运行库属于系统级组件，安装或更新运行库时可能弹出管理员授权（UAC）。如果 winget 已识别到满足要求的运行库，就无需重复安装该依赖。
+
 ## 直接下载所需的运行库
 
 使用 Releases 中的安装器或便携 ZIP 前，请先安装最新的
