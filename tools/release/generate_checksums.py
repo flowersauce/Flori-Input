@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""为现有 ZIP、MSI 和商店 MSIX 生成统一 SHA256 校验清单，不重新打包。"""
+"""为现有公开发布 ZIP 和 MSI 生成统一 SHA256 校验清单，不重新打包。"""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ PLATFORM = "windows-x64"
 
 
 def checksum_filename(version: str) -> str:
-    return f"{APP_NAME}-v{version}-SHA256SUMS.txt"
+    return f"{APP_NAME}-{version}-SHA256SUMS.txt"
 
 
 def sha256_file(path: Path) -> str:
@@ -50,18 +50,18 @@ def read_checksums(path: Path) -> dict[str, str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--release-dir", type=Path, default=Path(__file__).resolve().parents[2] / "output",
-                        help="现有三个发布包所在目录，默认 output。")
+    parser.add_argument("--release-dir", type=Path, default=Path(__file__).resolve().parents[2] / "output" / "public",
+                        help="现有公开发布 ZIP 和 MSI 所在目录，默认 output/public。")
     parser.add_argument("--version", help="指定发布版本；默认从目录中唯一的 MSI 文件名读取。")
     args = parser.parse_args()
     release_dir = args.release_dir.resolve()
     version = args.version
     if version is None:
-        installers = sorted(path for path in release_dir.glob(f"{APP_NAME}-v*-{PLATFORM}-setup.msi")
+        installers = sorted(path for path in release_dir.glob(f"{APP_NAME}-[0-9]*-{PLATFORM}-setup.msi")
                             if path.is_file())
         if len(installers) != 1:
             parser.error("请保留一个 MSI，或通过 --version 指定版本。")
-        match = re.fullmatch(rf"{re.escape(APP_NAME)}-v(\d+\.\d+\.\d+)-{re.escape(PLATFORM)}-setup\.msi",
+        match = re.fullmatch(rf"{re.escape(APP_NAME)}-(\d+\.\d+\.\d+)-{re.escape(PLATFORM)}-setup\.msi",
                              installers[0].name)
         if match is None:
             parser.error("无法从 MSI 文件名读取三段数字版本。")
@@ -69,13 +69,13 @@ def main() -> None:
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         parser.error("版本必须为三段数字，例如 1.5.0。")
 
-    base_name = f"{APP_NAME}-v{version}-{PLATFORM}"
+    base_name = f"{APP_NAME}-{version}-{PLATFORM}"
     packages = tuple(release_dir / f"{base_name}-{suffix}"
-                     for suffix in ("portable.zip", "setup.msi", "store.msix"))
+                     for suffix in ("portable.zip", "setup.msi"))
     checksum_path = write_checksums(packages, release_dir / checksum_filename(version))
     for package in packages:
         package.with_suffix(package.suffix + ".sha256").unlink(missing_ok=True)
-    print(f"统一校验文件：{checksum_path}")
+    print(f"公开发布校验文件：{checksum_path}")
 
 
 if __name__ == "__main__":

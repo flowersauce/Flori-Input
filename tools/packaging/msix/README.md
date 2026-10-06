@@ -45,7 +45,7 @@ MSIX 使用 Desktop VCLibs 框架依赖，不复制普通 VCRedist DLL；系统�
 uv run --locked python tools/release/package_app.py
 ```
 
-默认将便携 ZIP、普通 MSI、`Flori-Input-v<版本>-windows-x64-store.msix` 和统一的 `Flori-Input-v<版本>-SHA256SUMS.txt` 一起输出到 `output`，需要已安装 WiX 7.0.0 及 UI/Util 扩展。三种包共用相同应用构建；全部制作成功后覆盖同名文件，并清理旧版同类产物及旧单包 `.sha256` 文件。MSIX 不含便携标记，不自动签名；临时素材随本次打包清理。`--output-dir`、`--wix`、`--sdk-bin` 可覆盖默认路径。
+默认将 `Flori-Input-<版本>-windows-x64-store.msix` 输出到 `output/store`；便携 ZIP、普通 MSI 和统一的 `Flori-Input-<版本>-SHA256SUMS.txt` 放在 `output/public`。GitHub Release 只上传 `public` 中的三个文件；商店 MSIX 单独提交，不另生成校验文件，也不加入公开校验清单。需要已安装 WiX 7.0.0 及 UI/Util 扩展。三种包共用相同应用构建；全部制作成功后覆盖同名文件，并按发布命名规则清理输出根目录及 `public`、`store` 中的旧产物。MSIX 不含便携标记，不自动签名；临时素材随本次打包清理。`--output-dir`、`--wix`、`--sdk-bin` 可覆盖默认路径；自定义输出根目录同样使用 `public`、`store` 子目录。
 
 正式版本统一且各渠道验证通过后，可生成三种产物及 MSI 的 winget 清单：
 
@@ -62,10 +62,10 @@ uv run --locked python tools/release/release.py
 先在项目根目录的 PowerShell 中复制测试副本；当前版本示例为 1.5.0：
 
 ```powershell
-$storeMsix = (Resolve-Path '.\output\Flori-Input-v1.5.0-windows-x64-store.msix').Path
-$testDirectory = Join-Path (Split-Path -Parent $storeMsix) 'testing'
+$storeMsix = (Resolve-Path '.\output\store\Flori-Input-1.5.0-windows-x64-store.msix').Path
+$testDirectory = Join-Path $PWD 'output\testing'
 New-Item -ItemType Directory -Path $testDirectory -Force | Out-Null
-$testMsix = Join-Path $testDirectory 'Flori-Input-v1.5.0-windows-x64-development.msix'
+$testMsix = Join-Path $testDirectory 'Flori-Input-1.5.0-windows-x64-development.msix'
 Copy-Item -LiteralPath $storeMsix -Destination $testMsix
 $sdkBin = 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64'
 ```
@@ -88,12 +88,12 @@ if ($LASTEXITCODE -ne 0) { throw 'MSIX 签名失败，停止安装。' }
 if ($LASTEXITCODE -ne 0) { throw 'MSIX 签名校验失败，停止安装。' }
 ```
 
-记录 `$devCertificate.Thumbprint`，后续可复用它签名更高版本的测试副本，不必每次新建证书。签名只修改 `output/testing` 中的 `development.msix`，商店包和统一校验文件保持原样；测试副本不加入发布校验清单。重新打包不清理 `testing`；本地测试结束后由开发者清理需要移除的副本和日志。
+记录 `$devCertificate.Thumbprint`，后续可复用它签名更高版本的测试副本，不必每次新建证书。签名只修改 `output/testing` 中的 `development.msix`；商店包保持原样，公开校验清单仅包含 ZIP 和 MSI。重新打包不清理 `testing`；本地测试结束后由开发者清理需要移除的副本和日志。
 
 回到普通权限 PowerShell，在项目根目录重新设置 `$testMsix` 后安装。先检查当前用户是否已有满足要求的 x64 Desktop VCLibs；已有时直接复用，仅缺少时通过 `-DependencyPath` 提供本机 Retail x64 框架：
 
 ```powershell
-$testMsix = (Resolve-Path '.\output\testing\Flori-Input-v1.5.0-windows-x64-development.msix').Path
+$testMsix = (Resolve-Path '.\output\testing\Flori-Input-1.5.0-windows-x64-development.msix').Path
 $installedVclibs = Get-AppxPackage -Name 'Microsoft.VCLibs.140.00.UWPDesktop' -ErrorAction Stop |
     Where-Object {
         $_.Architecture -eq 'X64' -and
@@ -144,10 +144,10 @@ Get-ChildItem 'Cert:\CurrentUser\My' |
         throw '开发证书 Publisher 不匹配、缺少私钥或已过期，停止升级。'
     }
     $sdkBin = 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64'
-    $storeMsix = (Resolve-Path '.\output\Flori-Input-v1.5.0-windows-x64-store.msix' -ErrorAction Stop).Path
-    $testDirectory = Join-Path (Split-Path -Parent $storeMsix) 'testing'
+    $storeMsix = (Resolve-Path '.\output\store\Flori-Input-1.5.0-windows-x64-store.msix' -ErrorAction Stop).Path
+    $testDirectory = Join-Path $PWD 'output\testing'
     New-Item -ItemType Directory -Path $testDirectory -Force -ErrorAction Stop | Out-Null
-    $testMsix = Join-Path $testDirectory 'Flori-Input-v1.5.0-windows-x64-development.msix'
+    $testMsix = Join-Path $testDirectory 'Flori-Input-1.5.0-windows-x64-development.msix'
     Copy-Item -LiteralPath $storeMsix -Destination $testMsix -ErrorAction Stop
     & (Join-Path $sdkBin 'signtool.exe') sign /fd SHA256 /s My /sha1 $devCertificate.Thumbprint $testMsix
     if ($LASTEXITCODE -ne 0) { throw 'MSIX 签名失败，停止升级。' }

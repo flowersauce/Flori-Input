@@ -89,7 +89,9 @@ cmake --build build/Release
 Application icons are generated from a single SVG source. After changing the logo, follow
 [Icon generation](tools/assets/README.md) to update the ICO and rebuild. A standalone PNG is optional.
 
-Generate the portable ZIP, MSI, unsigned Store MSIX and one `Flori-Input-v<version>-SHA256SUMS.txt` file together, directly in `output`.
+Generate all three packages together: the portable ZIP, MSI and `Flori-Input-<version>-SHA256SUMS.txt` go in
+`output/public`, while the unsigned Store MSIX goes in `output/store`. Upload only the three files in `public` to
+GitHub Releases; submit the Store package separately.
 Prepare the project Python environment, [WiX 7.0.0 and extensions](tools/packaging/windows/README.md),
 and the [Windows SDK](tools/packaging/msix/README.md), then run:
 
@@ -98,11 +100,13 @@ uv run --locked python tools/release/package_app.py
 ```
 
 The script reads from `build/Release` by default and does not compile. It replaces existing local artifacts only after
-all three packages are created, then removes older release packages and checksums from the output directory.
-Other files and subdirectories are preserved. Override paths with `--build-dir`, `--output-dir`, `--wix` or `--sdk-bin`.
+all three packages are created, then removes artifacts matching the release naming rules from the output root and
+older artifacts from `public` and `store`. Other files and subdirectories are preserved.
+Override paths with `--build-dir`, `--output-dir`, `--wix` or `--sdk-bin`; a custom output root also uses `public` and `store` subdirectories.
 
-The checksum file lists each package's SHA256 and filename. After signing, run
-`uv run --locked python tools/release/generate_checksums.py` to refresh it without repackaging.
+The checksum file lists only the ZIP and MSI hashes and filenames. MSIX is excluded and has no separate checksum file.
+After signing the MSI, run `uv run --locked python tools/release/generate_checksums.py` to refresh the checksum file
+in `output/public` without repackaging.
 This also removes the corresponding legacy per-package `.sha256` files.
 
 The portable ZIP includes `portable.flag` and stores configuration and scripts next to the executable.

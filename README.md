@@ -85,16 +85,16 @@ cmake --build build/Release
 
 应用图标统一从 SVG 生成。修改 Logo 后，先按[应用图标生成](tools/assets/README.md)更新 ICO，再重新编译；通用 PNG 按需单独输出。
 
-从已有的 Release 构建一次生成便携 ZIP、普通 MSI、未签名商店 MSIX 和统一校验文件 `Flori-Input-v<版本>-SHA256SUMS.txt`，直接输出到 `output`。
+从已有的 Release 构建一次生成三个包：便携 ZIP、普通 MSI 和统一校验文件 `Flori-Input-<版本>-SHA256SUMS.txt` 放在 `output/public`；未签名商店 MSIX 放在 `output/store`。GitHub Release 只上传 `public` 中的三个文件，商店包单独提交。
 准备项目 Python 环境、[WiX 7.0.0 及扩展](tools/packaging/windows/README.md)和[Windows SDK](tools/packaging/msix/README.md)后执行：
 
 ```powershell
 uv run --locked python tools/release/package_app.py
 ```
 
-默认读取 `build/Release`，不会自动编译。三种包全部制作成功后才覆盖本地同名产物，并清理输出目录中的旧版发布包及校验文件；其它文件和子目录保留。`--build-dir`、`--output-dir`、`--wix`、`--sdk-bin` 可覆盖默认路径。
+默认读取 `build/Release`，不会自动编译。三种包全部制作成功后才覆盖本地同名产物，并按发布命名规则清理 `output` 根目录及 `public`、`store` 中的旧产物；其它文件和子目录保留。`--build-dir`、`--output-dir`、`--wix`、`--sdk-bin` 可覆盖默认路径；`--output-dir` 指定的根目录同样使用 `public`、`store` 子目录。
 
-统一校验文件每行包含一个发布包的 SHA256 和文件名。签名后可运行 `uv run --locked python tools/release/generate_checksums.py` 更新校验文件，不重新打包；该入口也会删除对应的旧单包 `.sha256` 文件。
+统一校验文件仅包含 ZIP 和 MSI 的 SHA256 与文件名，不包含 MSIX，也不为商店包单独生成校验文件。MSI 签名后可运行 `uv run --locked python tools/release/generate_checksums.py` 更新 `output/public` 中的校验文件，不重新打包；该入口也会删除对应的旧单包 `.sha256` 文件。
 
 便携 ZIP 包含 `portable.flag`，配置和剧本保存在程序旁。未带该标记的开发构建使用
 `%LOCALAPPDATA%\Flori-Input`，诊断日志位于数据目录的 `logs` 子目录。

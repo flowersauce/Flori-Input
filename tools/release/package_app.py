@@ -66,7 +66,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--build-dir", type=Path, default=root / "build" / "Release",
                         help="CMake Release 构建目录，默认 build/Release。")
     parser.add_argument("--output-dir", type=Path, default=root / "output",
-                        help="发布产物目录，默认 output。全部制作成功后覆盖同名产物并清理旧版发布包。")
+                        help="输出根目录，默认 output；公开产物放在 public，商店包放在 store。全部制作成功后清理旧包。")
     parser.add_argument("--wix", default="wix",
                         help="WiX 7.0.0 可执行文件路径或 PATH 中的命令。")
     parser.add_argument("--sdk-bin", type=Path,
@@ -144,7 +144,7 @@ def remove_stale_packages(output_dir: Path, artifacts: tuple[Path, ...]) -> None
     """新产物输出后，只清理本目录中按发布命名规则生成的旧包及校验文件。"""
     current_names = {artifact.name for artifact in artifacts}
     pattern = re.compile(
-        rf"{re.escape(APP_NAME)}-v\d+\.\d+\.\d+-"
+        rf"{re.escape(APP_NAME)}-v?\d+\.\d+\.\d+-"
         rf"(?:{re.escape(PLATFORM)}-(?:portable\.zip|setup\.msi|store\.msix)(?:\.sha256)?|SHA256SUMS\.txt)"
     )
     removed = 0
@@ -161,13 +161,15 @@ def main() -> None:
     root = project_root()
     build_dir = args.build_dir.resolve()
     output_dir = args.output_dir.resolve()
+    public_dir = output_dir / "public"
+    store_dir = output_dir / "store"
     executable, version = release_build(build_dir, root)
-    base_name = f"{APP_NAME}-v{version}-{PLATFORM}"
+    base_name = f"{APP_NAME}-{version}-{PLATFORM}"
     portable_name = f"{base_name}-portable"
-    portable_zip = output_dir / f"{portable_name}.zip"
-    setup_msi = output_dir / f"{base_name}-setup.msi"
-    store_msix = output_dir / f"{base_name}-store.msix"
-    checksum_path = output_dir / checksum_filename(version)
+    portable_zip = public_dir / f"{portable_name}.zip"
+    setup_msi = public_dir / f"{base_name}-setup.msi"
+    store_msix = store_dir / f"{base_name}-store.msix"
+    checksum_path = public_dir / checksum_filename(version)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="flori-input-", dir=output_dir) as temporary:
@@ -184,8 +186,10 @@ def main() -> None:
         temporary_msix = work_dir / store_msix.name
         create_msix(application_dir, temporary_msix, version, args.sdk_bin, root)
         temporary_checksums = work_dir / checksum_path.name
-        write_checksums((temporary_zip, temporary_setup, temporary_msix), temporary_checksums)
+        write_checksums((temporary_zip, temporary_setup), temporary_checksums)
 
+        public_dir.mkdir(parents=True, exist_ok=True)
+        store_dir.mkdir(parents=True, exist_ok=True)
         temporary_zip.replace(portable_zip)
         print(f"便携包：{portable_zip}")
         temporary_setup.replace(setup_msi)
@@ -193,9 +197,11 @@ def main() -> None:
         temporary_msix.replace(store_msix)
         print(f"商店包（未签名）：{store_msix}")
         temporary_checksums.replace(checksum_path)
-        print(f"统一校验文件：{checksum_path}")
+        print(f"公开发布校验文件：{checksum_path}")
 
-    remove_stale_packages(output_dir, (portable_zip, setup_msi, store_msix, checksum_path))
+    remove_stale_packages(output_dir, ())
+    remove_stale_packages(public_dir, (portable_zip, setup_msi, checksum_path))
+    remove_stale_packages(store_dir, (store_msix,))
 
 
 if __name__ == "__main__":

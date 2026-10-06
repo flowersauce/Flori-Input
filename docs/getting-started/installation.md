@@ -35,7 +35,7 @@ Flori Input 本体按当前用户安装；VC++ 运行库属于系统级组件，
 
 ## 安装版
 
-正在准备的新安装版使用 `Flori-Input-v<版本>-windows-x64-setup.msi`，以下 MSI 说明适用于该新版本，
+正在准备的新安装版使用 `Flori-Input-<版本>-windows-x64-setup.msi`，以下 MSI 说明适用于该新版本，
 尚未正式发布；既有 Release 的 EXE 安装器仍采用旧布局。安装运行库后按 MSI 提示安装，程序目录为
 `%LOCALAPPDATA%\Programs\Flori-Input`，静默安装使用相同目录。安装、升级和修复均不提供自定义目录入口。
 升级和修复沿用已登记程序目录，不支持借此修改位置，数据目录保持独立。需要自行安排程序位置时使用便携 ZIP。
@@ -43,7 +43,7 @@ Flori Input 本体按当前用户安装；VC++ 运行库属于系统级组件，
 
 ## 便携版
 
-安装运行库后，下载 `Flori-Input-v<版本>-windows-x64-portable.zip`，解压到可写目录后运行 `Flori-Input.exe`
+安装运行库后，下载 `Flori-Input-<版本>-windows-x64-portable.zip`，解压到可写目录后运行 `Flori-Input.exe`
 。不要直接从压缩包内启动。新便携包通过程序旁的 `portable.flag` 识别便携模式，请保留该文件；配置保存在程序目录的
 `config/config.jsonc`，事件剧本放在同级的 `scripts` 目录；移动便携版时可一起移动这两个目录。
 

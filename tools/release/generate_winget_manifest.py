@@ -7,7 +7,7 @@ under:
 
     output/winget-manifests/manifests/f/Flowersauce/FSClicker/<version>/
 
-Default behavior assumes a completed release package in output.
+Default behavior assumes a completed release package in output/public.
 """
 
 from __future__ import annotations
@@ -40,8 +40,8 @@ def project_root() -> Path:
 def parse_args() -> argparse.Namespace:
     root = project_root()
     parser = argparse.ArgumentParser(description="Generate winget manifests for Flori Input release artifacts.")
-    parser.add_argument("--release-dir", default=str(root / "output"),
-                        help="Directory containing the packaged release artifacts.")
+    parser.add_argument("--release-dir", default=str(root / "output" / "public"),
+                        help="Directory containing the public release artifacts; defaults to output/public.")
     parser.add_argument("--output-dir", default=str(root / "output" / "winget-manifests"),
                         help="Root directory for generated winget manifests.")
     parser.add_argument("--version", default=None,
@@ -63,9 +63,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def detect_setup_artifact(release_dir: Path, version: str | None) -> Path:
-    candidates = sorted(release_dir.glob(f"{APP_NAME}-v*-{WINDOWS_X64_SUFFIX}-setup.msi"))
+    candidates = sorted(release_dir.glob(f"{APP_NAME}-[0-9]*-{WINDOWS_X64_SUFFIX}-setup.msi"))
     candidates = [path for path in candidates if path.is_file()
-                  and (version is None or path.name == f"{APP_NAME}-v{version}-{WINDOWS_X64_SUFFIX}-setup.msi")]
+                  and (version is None or path.name == f"{APP_NAME}-{version}-{WINDOWS_X64_SUFFIX}-setup.msi")]
     if not candidates:
         raise FileNotFoundError(
             f"Could not find the requested Flori Input MSI in {release_dir}."
@@ -76,7 +76,7 @@ def detect_setup_artifact(release_dir: Path, version: str | None) -> Path:
 
 
 def extract_version(setup_path: Path, explicit_version: str | None, metadata: MsiMetadata) -> str:
-    pattern = re.compile(rf"^{re.escape(APP_NAME)}-v(.+)-{re.escape(WINDOWS_X64_SUFFIX)}-setup\.msi$", re.IGNORECASE)
+    pattern = re.compile(rf"^{re.escape(APP_NAME)}-(.+)-{re.escape(WINDOWS_X64_SUFFIX)}-setup\.msi$", re.IGNORECASE)
     match = pattern.match(setup_path.name)
     if not match:
         raise ValueError(f"Cannot infer version from installer name: {setup_path.name}")
@@ -104,7 +104,7 @@ def read_or_compute_sha256(setup_path: Path, explicit_sha256: str | None, versio
 
 
 def release_url(version: str) -> str:
-    return f"{REPO_URL}/releases/download/v{version}/{APP_NAME}-v{version}-{WINDOWS_X64_SUFFIX}-setup.msi"
+    return f"{REPO_URL}/releases/download/v{version}/{APP_NAME}-{version}-{WINDOWS_X64_SUFFIX}-setup.msi"
 
 
 def notes_url(version: str) -> str:

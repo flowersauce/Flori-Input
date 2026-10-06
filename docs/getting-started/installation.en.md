@@ -41,7 +41,7 @@ x64 runtime and try again.
 
 ## Installer
 
-The upcoming installer uses `Flori-Input-v<version>-windows-x64-setup.msi`; the MSI instructions below apply to
+The upcoming installer uses `Flori-Input-<version>-windows-x64-setup.msi`; the MSI instructions below apply to
 that development version, which has not been released. Existing EXE releases use the legacy layout.
 After installing the runtime, follow the MSI prompts. The program directory is `%LOCALAPPDATA%\Programs\Flori-Input`,
 including for silent installation. Installation, upgrade and repair offer no custom directory option. Upgrades and
@@ -51,7 +51,7 @@ Stop input tasks and close the app before installing, updating, repairing or uni
 
 ## Portable package
 
-After installing the runtime, download `Flori-Input-v<version>-windows-x64-portable.zip`, extract it to a writable
+After installing the runtime, download `Flori-Input-<version>-windows-x64-portable.zip`, extract it to a writable
 directory, then run
 `Flori-Input.exe`. Do not run the app directly from the ZIP. New portable packages use `portable.flag` next to the
 executable to enable portable mode; keep this file. The portable package stores settings in

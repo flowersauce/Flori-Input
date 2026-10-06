@@ -35,7 +35,7 @@ wix extension add WixToolset.Util.wixext/7.0.0
 uv run --locked python tools/release/package_app.py
 ```
 
-以上命令使用已安装的全局 WiX，同时生成 `Flori-Input-v<版本>-windows-x64-setup.msi`、便携 ZIP、未签名商店 MSIX 和统一的 `Flori-Input-v<版本>-SHA256SUMS.txt`，直接放在 `output`。校验文件每行包含一个包的 SHA256 和文件名。全部制作成功后覆盖同名文件，并清理旧版同类产物及旧单包 `.sha256` 文件，其它文件和子目录保留。版本来自 Release 构建缓存，并核对当前 `CMakeLists.txt`；MSI 只接受三段数字版本。`--build-dir`、`--output-dir`、`--wix` 和 `--sdk-bin` 可覆盖默认路径。Python 脚本不会隐式编译、安装或提交发布。
+以上命令使用已安装的全局 WiX，将 `Flori-Input-<版本>-windows-x64-setup.msi`、便携 ZIP 和统一的 `Flori-Input-<版本>-SHA256SUMS.txt` 放在 `output/public`，未签名商店 MSIX 放在 `output/store`。校验文件仅包含 ZIP 和 MSI 的 SHA256 与文件名。全部制作成功后覆盖同名文件，并按发布命名规则清理输出根目录及 `public`、`store` 中的旧产物，包括旧 `Flori-Input-v…` 命名产物及单包 `.sha256` 文件；其它文件和子目录保留。版本来自 Release 构建缓存，并核对当前 `CMakeLists.txt`；MSI 只接受三段数字版本。`--build-dir`、`--output-dir`、`--wix` 和 `--sdk-bin` 可覆盖默认路径；自定义输出根目录同样使用 `public`、`store` 子目录。Python 脚本不会隐式编译、安装或提交发布。
 
 准备正式发布包与 winget 清单：
 
@@ -43,14 +43,14 @@ uv run --locked python tools/release/package_app.py
 uv run --locked python tools/release/release.py
 ```
 
-清单从实际 MSI 读取 ProductCode、UpgradeCode、ProductVersion，并计算文件 SHA256；同目录存在统一校验文件时，按 MSI 文件名查找并核对，缺少该项或哈希不符会报错。保留社区包标识 `Flowersauce.FSClicker`；产品 GUID 与该标识分别维护。三种包和统一校验文件位于 `output`，winget 清单位于 `output/winget-manifests`，不上传文件。
+清单默认从 `output/public` 中的实际 MSI 读取 ProductCode、UpgradeCode、ProductVersion，并计算文件 SHA256；同目录存在统一校验文件时，按 MSI 文件名查找并核对，缺少该项或哈希不符会报错。保留社区包标识 `Flowersauce.FSClicker`；产品 GUID 与该标识分别维护。winget 清单位于 `output/winget-manifests`，不上传文件。GitHub Release 只上传 `output/public` 中的 ZIP、MSI 和校验文件；`output/store` 中的 MSIX 单独用于商店提交，不生成或加入校验清单。
 
 三种包共用程序暂存目录，均附带项目 `LICENSE` 和 `THIRD-PARTY-NOTICES.txt`。第三方声明由仓库内的[许可原文](../../../resources/licenses/README.md)合并生成，涵盖 Slint 及 SDK 依赖、Glaze、内置字体和 Slint 标识；打包无需访问网络。
 
 如果对 MSI 签名，应先单独打包、签名，再更新校验文件和生成清单，不重新执行会覆盖已签名文件的完整发布入口：
 
 ```powershell
-$msiFiles = @(Get-ChildItem .\output\*-setup.msi)
+$msiFiles = @(Get-ChildItem .\output\public\*-setup.msi)
 if ($msiFiles.Count -ne 1) { throw '请明确选择要签名的 MSI。' }
 $msiPath = $msiFiles[0].FullName
 # 在此使用自己的证书完成签名，然后重新计算最终文件的校验值。
@@ -77,7 +77,7 @@ uv run --locked python tools/release/generate_winget_manifest.py --installer "$m
 从项目根目录选择要验证的 MSI，并使用标准安装界面：
 
 ```powershell
-$msiFiles = @(Get-ChildItem .\output\*-setup.msi)
+$msiFiles = @(Get-ChildItem .\output\public\*-setup.msi)
 if ($msiFiles.Count -ne 1) { throw '请明确指定要验证的 MSI 完整路径。' }
 $msiPath = $msiFiles[0].FullName
 New-Item -ItemType Directory -Path '.\output\testing' -Force | Out-Null

@@ -3,7 +3,7 @@
 @file release.py
 @brief Flori Input 发布流程管理脚本。
 
-负责执行发布前检查、应用打包、统一 SHA256 校验文件及 winget 清单生成。
+负责执行发布前检查、应用分渠道打包、公开发布 SHA256 校验文件及 winget 清单生成。
 """
 
 from __future__ import annotations
@@ -124,10 +124,10 @@ def find_setup(version: str) -> Path:
     @return 安装程序路径。
     """
     setup_name = (
-        f"{APP_NAME}-v{version}-{PLATFORM}-setup.msi"
+        f"{APP_NAME}-{version}-{PLATFORM}-setup.msi"
     )
 
-    setup_path = OUTPUT_DIR / setup_name
+    setup_path = OUTPUT_DIR / "public" / setup_name
 
     if not setup_path.is_file():
         raise FileNotFoundError(
@@ -141,7 +141,7 @@ def main() -> None:
     """
     @brief 执行完整发布流程。
     """
-    parser = argparse.ArgumentParser(description="统一准备 ZIP、MSI、商店 MSIX、SHA256 校验文件及 winget 清单。")
+    parser = argparse.ArgumentParser(description="分目录准备公开 ZIP/MSI 及其 SHA256 校验文件、商店 MSIX 和 winget 清单。")
     parser.add_argument("--wix", help="覆盖 WiX CLI 路径，例如 --wix wix。")
     parser.add_argument("--sdk-bin", type=Path, help="覆盖 Windows SDK x64 工具目录。")
     args = parser.parse_args()
@@ -152,7 +152,7 @@ def main() -> None:
     )
 
     print(
-        "\n[1/2] 生成发布包与统一校验文件"
+        "\n[1/2] 生成分渠道发布包与公开发布校验文件"
     )
 
     package_command = [sys.executable, str(PACKAGE_SCRIPT)]
