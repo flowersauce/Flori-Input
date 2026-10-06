@@ -147,7 +147,7 @@ def build_installer_manifest(version: str, installer_url: str, installer_sha256:
         f"  PackageDependencies:\n"
         f"  - PackageIdentifier: {VC_RUNTIME_PACKAGE}\n"
         f"Scope: user\n"
-        f"ElevationRequirement: elevationProhibited\n"
+        # Dependency preparation may run elevated; omit elevationProhibited.
         f"InstallModes:\n"
         f"- interactive\n"
         f"- silent\n"
@@ -156,7 +156,6 @@ def build_installer_manifest(version: str, installer_url: str, installer_sha256:
         f"ProductCode: {json.dumps(metadata.product_code)}\n"
         f"AppsAndFeaturesEntries:\n"
         f"- DisplayName: {DISPLAY_NAME}\n"
-        f"  DisplayVersion: {version}\n"
         f"  Publisher: {PUBLISHER}\n"
         f"  ProductCode: {json.dumps(metadata.product_code)}\n"
         f"  UpgradeCode: {json.dumps(metadata.upgrade_code)}\n"
