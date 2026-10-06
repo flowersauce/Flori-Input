@@ -311,34 +311,14 @@ namespace flori_input
 		}
 	} // namespace
 
-	std::filesystem::path AppConfig::executableDirectory()
-	{
-		std::vector<wchar_t> buffer(512);
-		for (;;)
-		{
-			const DWORD length = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
-			if (length == 0)
-			{
-				throw std::system_error(windowsError(), "GetModuleFileNameW");
-			}
-			if (length < buffer.size())
-			{
-				return fs::path(std::wstring(buffer.data(), length)).parent_path();
-			}
-			buffer.resize(buffer.size() * 2);
-		}
-	}
-
 	std::filesystem::path AppConfig::configPathFor(const fs::path &directory)
 	{
-		auto app = fs::absolute(directory).lexically_normal();
-		if (!app.has_filename())
+		auto data = fs::absolute(directory).lexically_normal();
+		if (!data.has_filename())
 		{
-			app = app.parent_path();
+			data = data.parent_path();
 		}
-		const bool installed =
-			_wcsicmp(app.filename().c_str(), L"current") == 0 && fs::exists(app / "sq.version") && fs::exists(app.parent_path() / "Update.exe");
-		return (installed ? app.parent_path() : app) / "config" / "config.jsonc";
+		return data / "config" / "config.jsonc";
 	}
 
 	SystemPreferences AppConfig::windowsPreferences()

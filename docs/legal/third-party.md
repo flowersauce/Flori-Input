@@ -9,5 +9,9 @@ Flori Input 本体的许可见[许可证](licenses.md)。以下组件及素材�
 | Jura、Sarasa UI SC                                   | 内置界面字体的字形来源 | 均采用 SIL Open Font License 1.1，版权和原始许可见[字体说明](fonts.md)。                                                                                                                                                                    |
 | Slint 标识素材                                       | 关于页的 Slint 图形    | 来源于 Slint 项目；素材许可与使用条件见 [CC BY-ND 4.0](https://creativecommons.org/licenses/by-nd/4.0/)。                                                                                                                                   |
 
+发布包在程序目录中提供 `THIRD-PARTY-NOTICES.txt`，包含以上组件和字体的许可原文、版权声明，
+以及官方 Slint 1.17.1 SDK 附带的第三方依赖声明。ZIP、MSI 和 MSIX 使用同一份声明；
+仓库中的原文与来源记录见[许可原文目录](https://github.com/flowersauce/Flori-Input/tree/HEAD/resources/licenses)。
+
 Windows 及 Microsoft 运行时库适用 Microsoft 的相关条款。本页是用户查找许可来源的入口，不替代各上游的正式许可文本。
 

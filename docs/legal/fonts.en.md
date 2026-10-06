@@ -23,6 +23,7 @@ the [Sarasa Gothic license](https://github.com/be5invis/Sarasa-Gothic/blob/main/
 
 Both source fonts use the [SIL Open Font License 1.1](https://openfontlicense.org/open-font-license-official-text/). It
 permits embedding and distributing modified fonts while requiring the relevant copyright notices and license to be
-retained. The source-project links above provide the original notices and full texts.
+retained. Release packages include both fonts' original copyright notices and full license texts in
+`THIRD-PARTY-NOTICES.txt`. The source-project links above also provide the originals.
 See [Third-party Components](third-party.en.md) for the other bundled components.
 

@@ -86,21 +86,49 @@ cmake --build build/Release
 
 ## Packaging
 
-Generate a portable package from an existing Release build. It reads from `build/Release` by default, does not build
-automatically, and overwrites local artifacts with the same name:
+Application icons are generated from a single SVG source. After changing the logo, follow
+[Icon generation](tools/assets/README.md) to update the ICO and rebuild. A standalone PNG is optional.
+
+Generate the portable ZIP, MSI, unsigned Store MSIX and one `Flori-Input-v<version>-SHA256SUMS.txt` file together, directly in `output`.
+Prepare the project Python environment, [WiX 7.0.0 and extensions](tools/packaging/windows/README.md),
+and the [Windows SDK](tools/packaging/msix/README.md), then run:
 
 ```powershell
-python tools/release/package_app.py
+uv run --locked python tools/release/package_app.py
 ```
 
-To generate an installer package, install the Velopack CLI (`vpk`) first, then run:
+The script reads from `build/Release` by default and does not compile. It replaces existing local artifacts only after
+all three packages are created, then removes older release packages and checksums from the output directory.
+Other files and subdirectories are preserved. Override paths with `--build-dir`, `--output-dir`, `--wix` or `--sdk-bin`.
 
-```powershell
-python tools/release/package_app.py --with-velopack
-```
+The checksum file lists each package's SHA256 and filename. After signing, run
+`uv run --locked python tools/release/generate_checksums.py` to refresh it without repackaging.
+This also removes the corresponding legacy per-package `.sha256` files.
 
-Artifacts are located in `output/release`. Other build directories can be specified with `--build-dir`. Before release,
-verify the application runs and installs correctly in a clean Windows environment. Configuration and script storage
+The portable ZIP includes `portable.flag` and stores configuration and scripts next to the executable.
+Development builds without this marker use `%LOCALAPPDATA%\Flori-Input`, with diagnostic logs
+in the data directory's `logs` subdirectory.
+
+The development branch now supports a native MSI shared by direct downloads and the winget community source.
+Prepare WiX 7.0.0 with its UI and Util extensions and review its license as described in
+[Windows MSI packaging and validation](tools/packaging/windows/README.md).
+
+`uv run --locked python tools/release/release.py` generates all three packages and winget manifests using metadata from the actual MSI.
+Manifests are written to `output/winget-manifests`.
+It does not compile or upload. MSI uses the program directory `%LOCALAPPDATA%\Programs\Flori-Input`.
+Direct downloads and winget offer no custom directory option during installation, upgrade or repair, including
+silent installation. Upgrades and repairs retain the registered directory without allowing a location change;
+use the portable ZIP if you need to choose the program location.
+**Uninstalling the new MSI deletes all configuration, scripts, logs and preview data in
+`%LOCALAPPDATA%\Flori-Input`. Copy anything you want to keep outside that directory first.** Upgrades and repairs
+preserve data.
+
+Store MSIX packaging includes the assigned package identity, Desktop VCLibs dependency and generated icons,
+and runs alongside MSI and ZIP packaging by default.
+Local sideloading uses a separately signed copy in `output/testing`; see [MSIX packaging and validation](tools/packaging/msix/README.md)
+for the steps. Store certification and publication are still pending; these development artifacts have not been released.
+
+Before release, verify the application runs and installs correctly on the target Windows versions. Configuration and script storage
 locations are described in [Installation and Updates](docs/getting-started/installation.en.md).
 
 ## License

@@ -21,6 +21,7 @@
 #include <string_view>
 #include <windows.h>
 #include "app/app_config.h"
+#include "app/app_paths.h"
 #include "app/clicker_runtime.h"
 #include "app/ui_resources.h"
 #include "core/input_router.h"
@@ -125,37 +126,19 @@ namespace flori_input
 		for (int index = 1; index < argc; ++index)
 		{
 			const std::string_view argument(argv[index]);
-			options.lifecycleHook |=
-				argument == "--veloapp-install" || argument == "--veloapp-obsolete" || argument == "--veloapp-updated" || argument == "--veloapp-uninstall";
 			options.preview |= argument == "--preview";
 			options.diagnoseInput |= argument == "--diagnose-input";
 		}
 		return options;
 	}
 
-	int runApplication(const ApplicationOptions &options, const TraceSink &trace)
+	int runApplication(const ApplicationOptions &options, const AppPaths &paths, const TraceSink &trace)
 	{
-		if (options.lifecycleHook)
-		{
-			return 0;
-		}
 		const bool preview		 = options.preview;
 		const bool diagnoseInput = options.diagnoseInput;
 		SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-		const auto directory	 = AppConfig::executableDirectory();
-		const auto dataDirectory = preview ? directory / "preview" : directory;
-		AppConfig  config(dataDirectory);
-		trace("Opening configuration and instance lock");
-		// 锁句柄必须存活到事件循环退出及配置保存完成。
-		const platform::InstanceLock instanceLock(config.filePath());
-		if (!instanceLock.acquired())
-		{
-			if (instanceLock.error() != ERROR_SHARING_VIOLATION)
-			{
-				platform::WindowIntegration::showError(nullptr, L"无法打开配置目录或单实例锁。\nCannot open configuration directory or instance lock.");
-			}
-			return instanceLock.error() == ERROR_SHARING_VIOLATION ? 0 : 1;
-		}
+		AppConfig config(paths.dataDirectory);
+		trace("Opening configuration");
 		if (config.load() == AppConfig::LoadResult::IoError)
 		{
 			platform::WindowIntegration::showError(nullptr, L"无法读取配置，程序未启动。\nCannot read configuration. Please check file permissions.");
@@ -249,7 +232,7 @@ namespace flori_input
 		std::optional<int> pendingPage;
 		std::string		   pasteError, scriptError;
 		bool			   scriptValidated = false;
-		const auto		   scriptDirectory = config.filePath().parent_path().parent_path() / "scripts";
+		const auto		   &scriptDirectory = paths.scriptsDirectory;
 		auto			   scriptPath	   = [&]
 		{
 			const auto				   &name = config.eventScriptSettings().file;

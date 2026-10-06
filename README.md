@@ -83,20 +83,36 @@ cmake --build build/Release
 
 ## 打包
 
-从已有的 Release 构建生成便携包；默认读取 `build/Release`，不会自动编译，会覆盖本地同名产物：
+应用图标统一从 SVG 生成。修改 Logo 后，先按[应用图标生成](tools/assets/README.md)更新 ICO，再重新编译；通用 PNG 按需单独输出。
+
+从已有的 Release 构建一次生成便携 ZIP、普通 MSI、未签名商店 MSIX 和统一校验文件 `Flori-Input-v<版本>-SHA256SUMS.txt`，直接输出到 `output`。
+准备项目 Python 环境、[WiX 7.0.0 及扩展](tools/packaging/windows/README.md)和[Windows SDK](tools/packaging/msix/README.md)后执行：
 
 ```powershell
-python tools/release/package_app.py
+uv run --locked python tools/release/package_app.py
 ```
 
-生成安装版需安装 Velopack CLI（`vpk`），然后执行：
+默认读取 `build/Release`，不会自动编译。三种包全部制作成功后才覆盖本地同名产物，并清理输出目录中的旧版发布包及校验文件；其它文件和子目录保留。`--build-dir`、`--output-dir`、`--wix`、`--sdk-bin` 可覆盖默认路径。
 
-```powershell
-python tools/release/package_app.py --with-velopack
-```
+统一校验文件每行包含一个发布包的 SHA256 和文件名。签名后可运行 `uv run --locked python tools/release/generate_checksums.py` 更新校验文件，不重新打包；该入口也会删除对应的旧单包 `.sha256` 文件。
 
-产物位于 `output/release`；其它构建目录可用 `--build-dir` 指定。发布前应在干净的 Windows
-环境验证运行与安装。配置和剧本的保存位置见[安装与更新](docs/getting-started/installation.md)。
+便携 ZIP 包含 `portable.flag`，配置和剧本保存在程序旁。未带该标记的开发构建使用
+`%LOCALAPPDATA%\Flori-Input`，诊断日志位于数据目录的 `logs` 子目录。
+
+开发分支已接入原生 MSI，普通下载和 winget 社区源共用该安装包。
+[Windows MSI 制作与验证](tools/packaging/windows/README.md)中包含 WiX 7.0.0、UI/Util 扩展和许可准备步骤。
+
+`uv run --locked python tools/release/release.py` 生成三种包和基于实际 MSI 的 winget 清单，不编译、不上传；清单位于 `output/winget-manifests`。
+MSI 程序目录为 `%LOCALAPPDATA%\Programs\Flori-Input`，普通安装与 winget 在安装、升级和修复时均不提供自定义程序目录。
+升级和修复沿用已登记的目录，不支持借此修改位置；需要自行安排文件位置时可使用便携版。
+**新 MSI 真正卸载时默认删除 `%LOCALAPPDATA%\Flori-Input` 中的全部配置、剧本、日志和预览数据；
+需要保留的内容请提前复制到该目录之外。** 升级和修复保留数据。
+
+商店 MSIX 已接入正式包身份、Desktop VCLibs 依赖和图标生成，默认与 MSI、ZIP 一起制作。
+本地侧载使用 `output/testing` 中单独签名的副本，具体步骤见[商店 MSIX 制作与验证](tools/packaging/msix/README.md)。
+商店审核与上架尚未完成，当前开发产物尚未正式发布。
+
+发布前应验证目标 Windows 版本上的运行与安装。配置和剧本的保存位置见[安装与更新](docs/getting-started/installation.md)。
 
 ## 许可
 

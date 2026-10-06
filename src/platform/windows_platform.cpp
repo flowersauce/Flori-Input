@@ -6,10 +6,13 @@
 #include <commctrl.h>
 #include <mmsystem.h>
 #include <shellapi.h>
+#include <sddl.h>
 #include <slint.h>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <utility>
+#include <vector>
 #include <windowsx.h>
 #include "platform/windows_input_marker.h"
 
@@ -18,6 +21,52 @@ namespace flori_input::platform
 	namespace
 	{
 		constexpr UINT DispatchTaskMessage = WM_APP + 0x3A1;
+
+		/** @brief 释放仅使用空值表示无效的 Windows 令牌句柄。 */
+		struct TokenHandleDeleter
+		{
+			void operator()(void *handle) const noexcept
+			{
+				CloseHandle(handle);
+			}
+		};
+		/** @brief 释放 SID 字符串的本地内存。 */
+		struct LocalMemoryDeleter
+		{
+			void operator()(wchar_t *value) const noexcept
+			{
+				LocalFree(value);
+			}
+		};
+		/** @brief 使用当前用户 SID 和会话命名空间关联普通安装与商店实例。 */
+		std::wstring installedInstanceMutexName()
+		{
+			HANDLE tokenHandle{};
+			if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &tokenHandle))
+			{
+				throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "Cannot query the current user");
+			}
+			const std::unique_ptr<void, TokenHandleDeleter> token(tokenHandle);
+			DWORD size{};
+			const BOOL queried = GetTokenInformation(token.get(), TokenUser, nullptr, 0, &size);
+			const DWORD queryError = GetLastError();
+			if (!queried && queryError != ERROR_INSUFFICIENT_BUFFER)
+			{
+				throw std::system_error(static_cast<int>(queryError), std::system_category(), "Cannot query the user SID size");
+			}
+			std::vector<BYTE> information(size);
+			if (!GetTokenInformation(token.get(), TokenUser, information.data(), size, &size))
+			{
+				throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "Cannot read the user SID");
+			}
+			PWSTR value{};
+			if (!ConvertSidToStringSidW(reinterpret_cast<const TOKEN_USER *>(information.data())->User.Sid, &value))
+			{
+				throw std::system_error(static_cast<int>(GetLastError()), std::system_category(), "Cannot format the user SID");
+			}
+			const std::unique_ptr<wchar_t, LocalMemoryDeleter> sid(value);
+			return std::wstring(L"Local\\Flowersauce.FloriInput.") + sid.get();
+		}
 
 		/** @brief 将 Raw Input 键盘记录转换为稳定的虚拟键码。 */
 		std::uint32_t rawVirtualKey(const RAWKEYBOARD &keyboard)
@@ -64,8 +113,26 @@ namespace flori_input::platform
 			PlaySoundW(static_cast<LPCWSTR>(sound), nullptr, SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
 		}
 	}
-	InstanceLock::InstanceLock(const std::filesystem::path &configFile)
+	InstanceLock::InstanceLock(const std::filesystem::path &configFile, const bool sharedInstalledInstance)
 	{
+		if (sharedInstalledInstance)
+		{
+			const auto name = installedInstanceMutexName();
+			const HANDLE mutex = CreateMutexW(nullptr, FALSE, name.c_str());
+			const DWORD result = GetLastError();
+			mutexHandle.reset(mutex);
+			if (!mutexHandle)
+			{
+				errorCode = result;
+				return;
+			}
+			if (result == ERROR_ALREADY_EXISTS)
+			{
+				mutexHandle.reset();
+				errorCode = ERROR_SHARING_VIOLATION;
+				return;
+			}
+		}
 		std::error_code error;
 		std::filesystem::create_directories(configFile.parent_path(), error);
 		if (error)
@@ -73,7 +140,7 @@ namespace flori_input::platform
 			errorCode = ERROR_ACCESS_DENIED;
 			return;
 		}
-		// 保留旧锁名，避免新旧版本同时启动。
+		// 保留文件锁名，兼容在同一目录使用旧便携版的情形。
 		const auto path = configFile.parent_path() / "FSClicker.lock";
 		handle = CreateFileW(path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
 		if (handle == INVALID_HANDLE_VALUE)

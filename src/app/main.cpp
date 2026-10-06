@@ -3,15 +3,18 @@
  * @brief 提供进程入口、诊断日志和顶层异常边界。
  */
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <windows.h>
-#include "app/app_config.h"
+#include "app/app_paths.h"
 #include "app/application.h"
 #include "app/ui_resources.h"
+#include "platform/windows_platform.h"
 
 int main(const int argc, char **const argv) // NOLINT(misc-const-correctness)
 {
@@ -36,17 +39,32 @@ int main(const int argc, char **const argv) // NOLINT(misc-const-correctness)
 
 	try
 	{
+		const auto paths = flori_input::AppPaths::resolve(options.preview);
+		const bool sharedInstalledInstance = !options.preview && paths.storageMode != flori_input::StorageMode::Portable;
+		// 在打开日志前取得锁，避免重复启动截断正在运行实例的诊断文件。
+		// 锁持续到事件循环退出且配置保存完成。
+		const flori_input::platform::InstanceLock instanceLock(paths.configFile, sharedInstalledInstance);
+		if (!instanceLock.acquired())
+		{
+			if (instanceLock.error() != ERROR_SHARING_VIOLATION)
+			{
+				flori_input::platform::WindowIntegration::showError(nullptr,
+					L"无法打开配置目录或单实例锁。\nCannot open configuration directory or instance lock.");
+			}
+			return instanceLock.error() == ERROR_SHARING_VIOLATION ? 0 : 1;
+		}
 		if (options.diagnoseInput)
 		{
-			traceFile.open(flori_input::AppConfig::executableDirectory() / "slint-input-trace.txt");
+			std::filesystem::create_directories(paths.logsDirectory);
+			traceFile.open(paths.logsDirectory / "slint-input-trace.txt");
 			if (!traceFile.is_open())
 			{
-				trace("Cannot open trace file; using stderr only");
+				throw std::runtime_error("Cannot open the input diagnostic log");
 			}
 			trace("Starting input diagnostics");
 		}
 
-		return flori_input::runApplication(options, trace);
+		return flori_input::runApplication(options, paths, trace);
 	}
 	catch (const std::exception &exception)
 	{

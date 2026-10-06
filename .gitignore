@@ -33,6 +33,7 @@ __pycache__/
 
 # 打包发行文件
 output/
+.wix/
 
 # MkDocs
 /site/
@@ -44,3 +45,4 @@ CMakeUserPresets.json
 # Local development notes and agent instructions
 /developer/
 /agents/
+/CHANGELOG.md

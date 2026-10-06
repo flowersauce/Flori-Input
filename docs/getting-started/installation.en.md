@@ -18,7 +18,8 @@ Before updating, stop active input tasks and close the app, then run:
 winget upgrade --id Flowersauce.FSClicker --exact --source winget
 ```
 
-The package identifier remains `Flowersauce.FSClicker` to preserve the upgrade path from FSClicker.
+The package identifier remains `Flowersauce.FSClicker`. The new MSI and legacy EXE have different installation
+identities. Back up and transfer data when migrating; keeping the winget identifier does not guarantee automatic migration.
 Starting with 1.4.0, its manifest declares the `Microsoft.VCRedist.2015+.x64` runtime dependency, which winget handles
 during installation.
 New releases may take time to appear in the winget source. If the desired version is not listed yet, use the installer
@@ -40,31 +41,57 @@ x64 runtime and try again.
 
 ## Installer
 
-After installing the runtime, download `Flori-Input-v<version>-windows-x64-setup.exe` and follow the installer prompts.
-Before updating, stop any
-active input task and close the app.
+The upcoming installer uses `Flori-Input-v<version>-windows-x64-setup.msi`; the MSI instructions below apply to
+that development version, which has not been released. Existing EXE releases use the legacy layout.
+After installing the runtime, follow the MSI prompts. The program directory is `%LOCALAPPDATA%\Programs\Flori-Input`,
+including for silent installation. Installation, upgrade and repair offer no custom directory option. Upgrades and
+repairs retain the registered program directory without allowing a location change; the data directory stays separate.
+Use the portable ZIP if you need another program location.
+Stop input tasks and close the app before installing, updating, repairing or uninstalling.
 
 ## Portable package
 
 After installing the runtime, download `Flori-Input-v<version>-windows-x64-portable.zip`, extract it to a writable
 directory, then run
-`Flori-Input.exe`. Do not run the app directly from the ZIP. The portable package stores settings in
+`Flori-Input.exe`. Do not run the app directly from the ZIP. New portable packages use `portable.flag` next to the
+executable to enable portable mode; keep this file. The portable package stores settings in
 `config/config.jsonc` next to the app and event scripts in the neighboring `scripts` directory. You can move both
 directories with the portable app.
 
 ## Where settings and scripts are stored
 
-The installer stores settings and scripts in the installation root, alongside the `current` version directory:
+The new MSI stores settings and scripts in a separate directory for the current user:
 
 ```text
-<installation root>\
-├─ current\Flori-Input.exe
+%LOCALAPPDATA%\Flori-Input\
 ├─ config\config.jsonc
-└─ scripts\
+├─ scripts\
+├─ logs\
+└─ preview\
 ```
 
-The actual installation location depends on how the app was installed. To find it, click **Open scripts folder** on the
-**Script** page. Its parent is the installation root; `config\config.jsonc` is alongside `scripts`. Because `config` and
-`scripts` are outside `current`, an installer update does not replace them with the version directory. Keep copies of
-both directories when backing up your settings and scripts.
+Direct MSI downloads and the winget community source share this data directory. Click **Open scripts folder** on
+the **Script** page; its parent is the data root. Upgrades and repairs preserve data. Store MSIX uses separate
+package storage managed by Windows: configuration and scripts in `LocalState`, and logs in `LocalCache`.
+Store certification and publication are still pending; the Store channel is not available as a released option yet.
+
+## Uninstalling the new MSI
+
+Uninstall through Windows Settings or run `winget uninstall --id Flowersauce.FSClicker --exact --source winget`.
+This removes the MSI's program files, shortcuts and registration, plus all configuration, scripts, logs and preview
+data under `%LOCALAPPDATA%\Flori-Input`. No cleanup parameter or option to retain data is provided.
+**Copy anything you want to keep outside that data directory before uninstalling.** Exported files, portable
+directories and Store data are outside the MSI cleanup scope. Removing the old MSI during an upgrade skips data cleanup.
+
+## Migrating from the legacy EXE
+
+**The new MSI cannot upgrade the legacy 1.4.0 Velopack EXE installation in place. Uninstall the old version manually first.**
+
+1. Close the old app. If you want to keep settings and scripts, back up `config` and `scripts` from `%LOCALAPPDATA%\Flowersauce.FSClicker` to another location.
+2. Uninstall **Flori Input 1.4.0** manually through Windows Settings.
+3. Press `Win + R`, enter `%LOCALAPPDATA%`, and delete the remaining `Flowersauce.FSClicker` folder, if present.
+4. Install the new MSI.
+
+To restore your backup, copy `config` and `scripts` into `%LOCALAPPDATA%\Flori-Input` while the app is closed.
+For a custom legacy location, use the old app's **Open scripts folder** to find it before backing up and cleaning that directory.
 

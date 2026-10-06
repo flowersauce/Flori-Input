@@ -28,10 +28,12 @@ namespace flori_input::platform
 	class InstanceLock final
 	{
 	public:
-		/** @brief 依据配置文件路径获取单实例锁。 */
-		explicit InstanceLock(const std::filesystem::path &configFile);
+		/** @brief 锁定配置文件；安装版额外与同用户、同会话的其他发行渠道互斥。 */
+		explicit InstanceLock(const std::filesystem::path &configFile, bool sharedInstalledInstance = false);
 		/** @brief 释放单实例锁。 */
 		~InstanceLock();
+		InstanceLock(const InstanceLock &) = delete;
+		InstanceLock &operator=(const InstanceLock &) = delete;
 		/** @brief 判断当前实例是否取得锁。 */
 		bool acquired() const
 		{
@@ -44,7 +46,16 @@ namespace flori_input::platform
 		}
 
 	private:
+		/** @brief 使命名互斥体在构造异常和正常退出时均能释放。 */
+		struct MutexHandleDeleter
+		{
+			void operator()(void *value) const noexcept
+			{
+				CloseHandle(value);
+			}
+		};
 		HANDLE handle{INVALID_HANDLE_VALUE};
+		std::unique_ptr<void, MutexHandleDeleter> mutexHandle;
 		DWORD  errorCode{};
 	};
 	class WindowIntegration final

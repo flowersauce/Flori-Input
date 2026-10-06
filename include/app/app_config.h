@@ -62,14 +62,12 @@ namespace flori_input
 		};
 		using PreferencesReader = std::function<SystemPreferences()>;
 
-		/** @brief 获取当前可执行文件所在目录。 */
-		static std::filesystem::path executableDirectory();
-		/** @brief 根据便携或安装目录规则确定配置路径。 */
-		static std::filesystem::path configPathFor(const std::filesystem::path &applicationDirectory);
+		/** @brief 根据已解析的数据根目录确定配置路径。 */
+		static std::filesystem::path configPathFor(const std::filesystem::path &dataDirectory);
 		/** @brief 从 Windows 读取语言及主题偏好。 */
 		static SystemPreferences windowsPreferences();
 		/** @brief 初始化配置服务；构造时不写入磁盘。 */
-		explicit AppConfig(const std::filesystem::path &applicationDirectory = executableDirectory(), PreferencesReader preferencesReader = windowsPreferences);
+		explicit AppConfig(const std::filesystem::path &dataDirectory, PreferencesReader preferencesReader = windowsPreferences);
 
 		/** @brief 读取 JSONC 配置，必要时创建或重置默认值。 */
 		LoadResult load();

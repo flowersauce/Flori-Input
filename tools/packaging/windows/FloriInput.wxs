@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Package Name="Flori Input" Manufacturer="Flowersauce" Language="1033"
+           Version="$(var.AppVersion)" ProductCode="$(var.ProductCode)"
+           UpgradeCode="{4BF858CE-49AA-4BF7-835C-02A2BF22E706}" Scope="perUser">
+    <MajorUpgrade Schedule="afterInstallInitialize"
+                  DowngradeErrorMessage="A newer version of Flori Input is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Launch Condition="NOT ALLUSERS" Message="Flori Input supports installation for the current user only." />
+    <Property Id="ARPPRODUCTICON" Value="FloriInputIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/flowersauce/Flori-Input" />
+    <Property Id="MSIRESTARTMANAGERCONTROL" Value="DisableShutdown" />
+    <Icon Id="FloriInputIcon" SourceFile="$(var.AppIcon)" />
+
+    <Property Id="INSTALLFOLDER" Secure="yes" />
+    <Property Id="PREVIOUSINSTALLFOLDER">
+      <RegistrySearch Id="FindPreviousInstallFolder" Root="HKCU"
+                      Key="Software\Flowersauce\Flori-Input\Installer"
+                      Name="InstallLocation" Type="raw" Bitness="always64" />
+    </Property>
+    <!-- New installations use one fixed path, including silent installation. -->
+    <SetProperty Id="INSTALLFOLDER" Action="SetFixedInstallFolder"
+                 Value="[LocalAppDataFolder]Programs\Flori-Input\"
+                 Before="CostFinalize" Sequence="both" Condition="NOT PREVIOUSINSTALLFOLDER" />
+    <!-- Maintain existing products at their registered location. -->
+    <SetProperty Id="INSTALLFOLDER" Value="[PREVIOUSINSTALLFOLDER]"
+                 Before="CostFinalize" Sequence="both" Condition="PREVIOUSINSTALLFOLDER" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="UserProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Flori-Input">
+          <Component Id="InstallRegistration" Guid="{55948B89-26CE-4FEC-9665-7708A70FD294}">
+            <RegistryValue Root="HKCU" Key="Software\Flowersauce\Flori-Input\Installer"
+                           Name="InstallLocation" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+            <RemoveRegistryKey Root="HKCU" Key="Software\Flowersauce\Flori-Input\Installer"
+                               Action="removeOnUninstall" />
+            <RemoveFolder Id="RemoveEmptyInstallFolder" On="uninstall" />
+            <RemoveFolder Id="RemoveEmptyUserProgramsFolder" Directory="UserProgramsFolder" On="uninstall" />
+          </Component>
+        </Directory>
+      </Directory>
+      <Component Id="PrivateDataCleanup" Guid="{8103DA0F-0D77-478D-AD1A-25B09CA819B3}">
+        <RegistryValue Root="HKCU" Key="Software\Flowersauce\Flori-Input\Installer"
+                       Name="DataCleanup" Type="integer" Value="1" KeyPath="yes" />
+        <!-- Only an explicit uninstall owns this cleanup; major upgrades preserve data. -->
+        <util:RemoveFolderEx Id="RemovePrivateData" Property="floriInputDataFolder" On="uninstall"
+                             Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+      </Component>
+    </StandardDirectory>
+    <!-- Resolve a private, fixed data path before RemoveFolderEx enumerates it. -->
+    <SetProperty Id="floriInputDataFolder" Value="[LocalAppDataFolder]Flori-Input\"
+                 Before="Wix4RemoveFoldersEx_X64" Sequence="execute"
+                 Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut" Guid="{B6594DA5-4360-40EC-9A8A-A4312E94EF59}">
+        <Shortcut Id="FloriInputStartMenu" Name="Flori Input" Target="[#ApplicationExecutable]"
+                  WorkingDirectory="INSTALLFOLDER" Icon="FloriInputIcon" />
+        <RegistryValue Root="HKCU" Key="Software\Flowersauce\Flori-Input\Installer"
+                       Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <!-- Detect running instances without sending close messages or terminating tasks. -->
+    <util:CloseApplication Id="DetectRunningApplication" Target="Flori-Input.exe"
+                           Property="FLORI_INPUT_RUNNING" CloseMessage="no" EndSessionMessage="no"
+                           ElevatedCloseMessage="no" ElevatedEndSessionMessage="no"
+                           RebootPrompt="no" Timeout="1" />
+    <CustomAction Id="RequireApplicationExit"
+                  Error="Please stop input tasks and close Flori Input before installing, repairing or uninstalling." />
+    <InstallExecuteSequence>
+      <Custom Action="override Wix4CloseApplications_X64" Before="InstallInitialize" />
+      <Custom Action="RequireApplicationExit" After="Wix4CloseApplications_X64" Condition="FLORI_INPUT_RUNNING" />
+    </InstallExecuteSequence>
+
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+    <Feature Id="MainApplication" Title="Flori Input" Level="1">
+      <ComponentGroupRef Id="ApplicationFiles" />
+      <ComponentRef Id="InstallRegistration" />
+      <ComponentRef Id="PrivateDataCleanup" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>

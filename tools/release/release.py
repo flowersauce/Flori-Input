@@ -3,11 +3,12 @@
 @file release.py
 @brief Flori Input 发布流程管理脚本。
 
-负责执行发布前检查、应用打包以及 winget 清单生成。
+负责执行发布前检查、应用打包、统一 SHA256 校验文件及 winget 清单生成。
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import subprocess
@@ -25,7 +26,7 @@ WINGET_SCRIPT = ROOT_DIR / "tools" / "release" / "generate_winget_manifest.py"
 CMAKE_FILE = ROOT_DIR / "CMakeLists.txt"
 VCPKG_FILE = ROOT_DIR / "vcpkg.json"
 
-OUTPUT_DIR = ROOT_DIR / "output" / "release"
+OUTPUT_DIR = ROOT_DIR / "output"
 
 
 def run_command(command: list[str]) -> None:
@@ -117,13 +118,13 @@ def check_version() -> str:
 
 def find_setup(version: str) -> Path:
     """
-    @brief 查找 Velopack 生成的安装程序。
+    @brief 查找本轮生成的独立 MSI。
 
     @param version 项目版本。
     @return 安装程序路径。
     """
     setup_name = (
-        f"{APP_NAME}-v{version}-{PLATFORM}-setup.exe"
+        f"{APP_NAME}-v{version}-{PLATFORM}-setup.msi"
     )
 
     setup_path = OUTPUT_DIR / setup_name
@@ -140,6 +141,10 @@ def main() -> None:
     """
     @brief 执行完整发布流程。
     """
+    parser = argparse.ArgumentParser(description="统一准备 ZIP、MSI、商店 MSIX、SHA256 校验文件及 winget 清单。")
+    parser.add_argument("--wix", help="覆盖 WiX CLI 路径，例如 --wix wix。")
+    parser.add_argument("--sdk-bin", type=Path, help="覆盖 Windows SDK x64 工具目录。")
+    args = parser.parse_args()
     version = check_version()
 
     print(
@@ -147,16 +152,15 @@ def main() -> None:
     )
 
     print(
-        "\n[1/2] 生成发布包"
+        "\n[1/2] 生成发布包与统一校验文件"
     )
 
-    run_command(
-        [
-            sys.executable,
-            str(PACKAGE_SCRIPT),
-            "--with-velopack",
-        ]
-    )
+    package_command = [sys.executable, str(PACKAGE_SCRIPT)]
+    if args.wix:
+        package_command.extend(["--wix", args.wix])
+    if args.sdk_bin:
+        package_command.extend(["--sdk-bin", str(args.sdk_bin)])
+    run_command(package_command)
 
     setup_path = find_setup(version)
 
@@ -172,6 +176,8 @@ def main() -> None:
         [
             sys.executable,
             str(WINGET_SCRIPT),
+            "--installer", str(setup_path),
+            "--version", version,
         ]
     )
 

@@ -4,21 +4,56 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import re
 import shutil
-import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
 
+from generate_checksums import checksum_filename, write_checksums
+from msi_package import create_msi
+from msix_package import create_msix
+
 
 APP_NAME = "Flori-Input"
-DISPLAY_NAME = "Flori Input"
-AUTHOR = "Flowersauce"
 EXE_NAME = f"{APP_NAME}.exe"
 PLATFORM = "windows-x64"
-PACK_ID = "Flowersauce.FSClicker"  # 已发布的安装身份，不能随展示名一起更改。
+
+
+def write_third_party_notices(destination: Path, root: Path) -> None:
+    """将仓库内许可原文合并为三个发布包共用的单一声明文件。"""
+    sources = (
+        ("Slint 1.17.1 - Royalty-free License 2.0", "Slint-Royalty-free-2.0.md",
+         "https://github.com/slint-ui/slint/blob/v1.17.1/LICENSES/LicenseRef-Slint-Royalty-free-2.0.md"),
+        ("Slint 1.17.1 SDK - Third-party dependencies", "Slint-1.17.1-THIRDPARTY.md",
+         "https://github.com/slint-ui/slint/releases/tag/v1.17.1"),
+        ("Glaze 8.3.0 - MIT License", "Glaze-8.3.0-LICENSE.txt",
+         "https://github.com/stephenberry/glaze/blob/v8.3.0/LICENSE"),
+        ("Jura - SIL Open Font License 1.1", "Jura-OFL.txt",
+         "https://github.com/google/fonts/blob/main/ofl/jura/OFL.txt"),
+        ("Sarasa Gothic - SIL Open Font License 1.1", "Sarasa-Gothic-LICENSE.txt",
+         "https://github.com/be5invis/Sarasa-Gothic/blob/main/LICENSE"),
+        ("Slint logo assets - CC BY-ND 4.0", "CC-BY-ND-4.0.txt",
+         "https://github.com/slint-ui/slint/blob/v1.17.1/REUSE.toml"),
+    )
+    sections = [
+        "Flori Input - Third-party notices\n\n"
+        "Flori Input's own MIT license is provided in LICENSE. The components\n"
+        "and assets below retain their respective licenses.\n\n"
+        "The embedded FloriInputUI font is a derivative combining Jura and\n"
+        "Sarasa UI SC glyphs, distributed under SIL Open Font License 1.1.\n\n"
+        "Slint logo assets: Copyright (c) SixtyFPS GmbH, CC BY-ND 4.0.\n"
+        "Source: https://github.com/slint-ui/slint/tree/v1.17.1/logo\n\n"
+        "The Slint SDK dependency notices are retained as supplied by its\n"
+        "1.17.1 distribution and may cover optional/platform-specific features.\n"
+    ]
+    for title, filename, source in sources:
+        path = root / "resources" / "licenses" / filename
+        content = path.read_text(encoding="utf-8")
+        if not content.strip():
+            raise ValueError(f"第三方许可原文为空，无法打包：{path}")
+        sections.append(f"{'=' * 72}\n{title}\nSource: {source}\n\n{content.rstrip()}\n")
+    destination.write_text("\n".join(sections), encoding="utf-8", newline="\n")
 
 
 def project_root() -> Path:
@@ -27,19 +62,16 @@ def project_root() -> Path:
 
 def parse_args() -> argparse.Namespace:
     root = project_root()
-    parser = argparse.ArgumentParser(description="将现有 Slint/MSVC Release 构建打包为便携 ZIP 和可选安装器。")
+    parser = argparse.ArgumentParser(description="将现有 Slint/MSVC Release 构建统一打包为便携 ZIP、MSI 和商店 MSIX。")
     parser.add_argument("--build-dir", type=Path, default=root / "build" / "Release",
                         help="CMake Release 构建目录，默认 build/Release。")
-    parser.add_argument("--output-dir", type=Path, default=root / "output" / "release",
-                        help="发布产物目录，默认 output/release。已有同名产物会覆盖。")
-    parser.add_argument("--with-velopack", action="store_true", help="额外生成 Velopack 安装器。")
-    parser.add_argument("--keep-velopack-feed", action="store_true",
-                        help="保留 Velopack 更新源文件（需同时传入 --with-velopack）。")
-    parser.add_argument("--vpk", default="vpk", help="vpk 可执行文件或 PATH 中的命令，默认 vpk。")
-    args = parser.parse_args()
-    if args.keep_velopack_feed and not args.with_velopack:
-        parser.error("--keep-velopack-feed 需要 --with-velopack")
-    return args
+    parser.add_argument("--output-dir", type=Path, default=root / "output",
+                        help="发布产物目录，默认 output。全部制作成功后覆盖同名产物并清理旧版发布包。")
+    parser.add_argument("--wix", default="wix",
+                        help="WiX 7.0.0 可执行文件路径或 PATH 中的命令。")
+    parser.add_argument("--sdk-bin", type=Path,
+                        help="Windows SDK x64 工具目录；默认查找本机已安装的最新 SDK。")
+    return parser.parse_args()
 
 
 def read_cmake_cache(build_dir: Path) -> dict[str, str]:
@@ -73,6 +105,10 @@ def release_build(build_dir: Path, root: Path) -> tuple[Path, str]:
     version = cache.get("CMAKE_PROJECT_VERSION", "")
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?", version):
         raise ValueError(f"CMake 缓存中的版本号无效：{version!r}")
+    source_version = re.search(r"set\s*\(\s*FLORI_INPUT_VERSION\s+(\d+\.\d+\.\d+)\s*\)",
+                               (root / "CMakeLists.txt").read_text(encoding="utf-8"))
+    if source_version is None or source_version.group(1) != version:
+        raise ValueError("Release 构建版本与当前源码版本不一致；请重新配置并构建后再打包。")
 
     executable = build_dir / (EXE_NAME if build_type else f"Release/{EXE_NAME}")
     if not executable.is_file():
@@ -94,46 +130,30 @@ def stage_application(executable: Path, destination: Path, root: Path) -> None:
     if not license_file.is_file():
         raise FileNotFoundError("缺少 LICENSE，无法生成发布包。")
     shutil.copy2(license_file, destination / "LICENSE")
+    write_third_party_notices(destination / "THIRD-PARTY-NOTICES.txt", root)
 
 
 def create_portable_zip(application_dir: Path, destination: Path) -> None:
     with zipfile.ZipFile(destination, "x", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(f"{application_dir.name}/portable.flag", "Flori Input portable data mode.\n")
         for file in sorted(path for path in application_dir.rglob("*") if path.is_file()):
             archive.write(file, file.relative_to(application_dir.parent))
 
 
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def write_checksum(path: Path) -> Path:
-    checksum = path.with_suffix(path.suffix + ".sha256")
-    checksum.write_text(f"{sha256_file(path)}  {path.name}\n", encoding="utf-8")
-    return checksum
-
-
-def create_velopack_setup(application_dir: Path, output_dir: Path, version: str, vpk: str, root: Path) -> Path:
-    icon = root / "resources" / "icons" / "Flori-Input.ico"
-    if not icon.is_file():
-        raise FileNotFoundError(f"缺少安装器图标：{icon}")
-    if not shutil.which(vpk) and not Path(vpk).is_file():
-        raise FileNotFoundError(f"找不到 vpk：{vpk}")
-
-    command = [
-        vpk, "pack", "--packId", PACK_ID, "--packVersion", version,
-        "--packDir", str(application_dir), "--mainExe", EXE_NAME,
-        "--packTitle", DISPLAY_NAME, "--packAuthors", AUTHOR,
-        "--icon", str(icon), "--outputDir", str(output_dir),
-    ]
-    subprocess.run(command, check=True)
-    setups = [path for path in output_dir.iterdir() if path.is_file() and path.name.casefold().endswith("setup.exe")]
-    if len(setups) != 1:
-        raise RuntimeError(f"Velopack 应生成一个 Setup.exe，实际找到 {len(setups)} 个。")
-    return setups[0]
+def remove_stale_packages(output_dir: Path, artifacts: tuple[Path, ...]) -> None:
+    """新产物输出后，只清理本目录中按发布命名规则生成的旧包及校验文件。"""
+    current_names = {artifact.name for artifact in artifacts}
+    pattern = re.compile(
+        rf"{re.escape(APP_NAME)}-v\d+\.\d+\.\d+-"
+        rf"(?:{re.escape(PLATFORM)}-(?:portable\.zip|setup\.msi|store\.msix)(?:\.sha256)?|SHA256SUMS\.txt)"
+    )
+    removed = 0
+    for path in output_dir.iterdir():
+        if path.is_file() and pattern.fullmatch(path.name) and path.name not in current_names:
+            path.unlink()
+            removed += 1
+    if removed:
+        print(f"已清理 {removed} 个旧版发布包或校验文件。")
 
 
 def main() -> None:
@@ -145,8 +165,9 @@ def main() -> None:
     base_name = f"{APP_NAME}-v{version}-{PLATFORM}"
     portable_name = f"{base_name}-portable"
     portable_zip = output_dir / f"{portable_name}.zip"
-    setup_exe = output_dir / f"{base_name}-setup.exe"
-    feed_dir = output_dir / f"{base_name}-velopack-feed"
+    setup_msi = output_dir / f"{base_name}-setup.msi"
+    store_msix = output_dir / f"{base_name}-store.msix"
+    checksum_path = output_dir / checksum_filename(version)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="flori-input-", dir=output_dir) as temporary:
@@ -156,39 +177,25 @@ def main() -> None:
 
         temporary_zip = work_dir / portable_zip.name
         create_portable_zip(application_dir, temporary_zip)
-        write_checksum(temporary_zip)
 
-        if args.with_velopack:
-            vpk_output = work_dir / "velopack"
-            vpk_output.mkdir()
-            generated_setup = create_velopack_setup(application_dir, vpk_output, version, args.vpk, root)
-            temporary_setup = work_dir / setup_exe.name
-            shutil.copy2(generated_setup, temporary_setup)
-            write_checksum(temporary_setup)
-            if args.keep_velopack_feed:
-                if feed_dir.exists():
-                    is_junction = getattr(feed_dir, "is_junction", lambda: False)()
-                    if not feed_dir.is_dir() or feed_dir.is_symlink() or is_junction:
-                        raise FileExistsError(f"无法覆盖非普通目录的更新源：{feed_dir}")
-                    previous_feed = work_dir / "previous-velopack-feed"
-                    feed_dir.rename(previous_feed)
-                    try:
-                        vpk_output.rename(feed_dir)
-                    except OSError:
-                        previous_feed.rename(feed_dir)
-                        raise
-                else:
-                    vpk_output.rename(feed_dir)
+        temporary_setup = work_dir / setup_msi.name
+        create_msi(application_dir, temporary_setup, version, args.wix, root)
+
+        temporary_msix = work_dir / store_msix.name
+        create_msix(application_dir, temporary_msix, version, args.sdk_bin, root)
+        temporary_checksums = work_dir / checksum_path.name
+        write_checksums((temporary_zip, temporary_setup, temporary_msix), temporary_checksums)
 
         temporary_zip.replace(portable_zip)
-        temporary_zip.with_suffix(".zip.sha256").replace(portable_zip.with_suffix(".zip.sha256"))
         print(f"便携包：{portable_zip}")
-        if args.with_velopack:
-            temporary_setup.replace(setup_exe)
-            temporary_setup.with_suffix(".exe.sha256").replace(setup_exe.with_suffix(".exe.sha256"))
-            print(f"安装包：{setup_exe}")
-        if args.keep_velopack_feed:
-            print(f"更新源：{feed_dir}")
+        temporary_setup.replace(setup_msi)
+        print(f"安装包：{setup_msi}")
+        temporary_msix.replace(store_msix)
+        print(f"商店包（未签名）：{store_msix}")
+        temporary_checksums.replace(checksum_path)
+        print(f"统一校验文件：{checksum_path}")
+
+    remove_stale_packages(output_dir, (portable_zip, setup_msi, store_msix, checksum_path))
 
 
 if __name__ == "__main__":

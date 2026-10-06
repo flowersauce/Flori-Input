@@ -17,7 +17,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Set release title
+        id: release_title
+        shell: bash
+        run: echo "name=Flori Input ${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          body_path: CHANGELOG.md
+          name: ${{ steps.release_title.outputs.name }}
+          draft: true

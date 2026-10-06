@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.30)
 
-set(FLORI_INPUT_VERSION 1.4.0)
+set(FLORI_INPUT_VERSION 1.5.0)
 project(Flori-Input VERSION ${FLORI_INPUT_VERSION} LANGUAGES CXX RC)
 
 find_package(Slint 1.17.1 EXACT CONFIG REQUIRED)
@@ -22,6 +22,7 @@ configure_file(src/app/ui_resource_defaults.h.in ui_resource_defaults.h @ONLY)
 add_executable(FloriInput WIN32
         src/app/application.cpp
         src/app/app_config.cpp
+        src/app/app_paths.cpp
         src/app/clicker_runtime.cpp
         src/app/main.cpp
         src/app/ui_resources.cpp
@@ -39,6 +40,9 @@ add_executable(FloriInput WIN32
         src/platform/windows_platform.cpp
         src/platform/windows_trigger_executor.cpp
         resources/slint_app.rc
+)
+set_source_files_properties(resources/slint_app.rc PROPERTIES
+        OBJECT_DEPENDS "${FLORI_INPUT_RESOURCE_DIR}/icons/Flori-Input.ico"
 )
 slint_target_sources(FloriInput ui/main.slint)
 target_compile_features(FloriInput PRIVATE cxx_std_23)
@@ -59,6 +63,8 @@ target_link_libraries(FloriInput PRIVATE
         comctl32
         comdlg32
         shell32
+        ole32
+        windowsapp
         winmm
 )
 if (MSVC)

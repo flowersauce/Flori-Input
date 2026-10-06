@@ -7,20 +7,23 @@ under:
 
     output/winget-manifests/manifests/f/Flowersauce/FSClicker/<version>/
 
-Default behavior assumes a completed release package in output/release.
+Default behavior assumes a completed release package in output.
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
+import json
 import re
 from pathlib import Path
+
+from generate_checksums import checksum_filename, read_checksums, sha256_file
+from msi_package import MsiMetadata, read_msi_metadata
 
 APP_NAME = "Flori-Input"
 DISPLAY_NAME = "Flori Input"
 PUBLISHER = "Flowersauce"
-PACKAGE_ID_SUFFIX = "FSClicker"  # 保留已发布的安装身份，避免破坏升级路径。
+PACKAGE_ID_SUFFIX = "FSClicker"  # 保留已发布的 WinGet 包标识。
 PACKAGE_IDENTIFIER = f"{PUBLISHER}.{PACKAGE_ID_SUFFIX}"
 WINDOWS_X64_SUFFIX = "windows-x64"
 VC_RUNTIME_PACKAGE = "Microsoft.VCRedist.2015+.x64"
@@ -37,18 +40,20 @@ def project_root() -> Path:
 def parse_args() -> argparse.Namespace:
     root = project_root()
     parser = argparse.ArgumentParser(description="Generate winget manifests for Flori Input release artifacts.")
-    parser.add_argument("--release-dir", default=str(root / "output" / "release"),
+    parser.add_argument("--release-dir", default=str(root / "output"),
                         help="Directory containing the packaged release artifacts.")
     parser.add_argument("--output-dir", default=str(root / "output" / "winget-manifests"),
                         help="Root directory for generated winget manifests.")
     parser.add_argument("--version", default=None,
-                        help="Override the detected version. Defaults to extracting it from the setup.exe name.")
+                        help="Select a version and verify it against the MSI ProductVersion.")
+    parser.add_argument("--installer", type=Path, default=None,
+                        help="Use this MSI instead of detecting an artifact in --release-dir.")
     parser.add_argument("--installer-url", default=None,
                         help="Override the installer download URL.")
     parser.add_argument("--release-notes-url", default=None,
                         help="Override the release notes URL.")
     parser.add_argument("--installer-sha256", default=None,
-                        help="Override the installer SHA256 value.")
+                        help="Verify this expected SHA256 against the actual installer.")
     parser.add_argument("--package-url", default=REPO_URL, help="Package homepage URL.")
     parser.add_argument("--publisher-url", default="https://github.com/flowersauce", help="Publisher homepage URL.")
     parser.add_argument("--publisher-support-url", default=f"{REPO_URL}/issues",
@@ -57,48 +62,49 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def detect_setup_artifact(release_dir: Path) -> Path:
-    pattern = re.compile(rf"^{re.escape(APP_NAME)}-v(.+)-{re.escape(WINDOWS_X64_SUFFIX)}-setup\.exe$", re.IGNORECASE)
-    candidates = []
-    for path in release_dir.glob(f"{APP_NAME}-v*-{WINDOWS_X64_SUFFIX}-setup.exe"):
-        if pattern.match(path.name):
-            candidates.append(path)
-
+def detect_setup_artifact(release_dir: Path, version: str | None) -> Path:
+    candidates = sorted(release_dir.glob(f"{APP_NAME}-v*-{WINDOWS_X64_SUFFIX}-setup.msi"))
+    candidates = [path for path in candidates if path.is_file()
+                  and (version is None or path.name == f"{APP_NAME}-v{version}-{WINDOWS_X64_SUFFIX}-setup.msi")]
     if not candidates:
         raise FileNotFoundError(
-            f"Could not find {APP_NAME}-v*-{WINDOWS_X64_SUFFIX}-setup.exe in {release_dir}."
+            f"Could not find the requested Flori Input MSI in {release_dir}."
         )
+    if len(candidates) != 1:
+        raise ValueError("Multiple MSI releases found; select --version or --installer explicitly.")
+    return candidates[0]
 
-    return max(candidates, key=lambda item: item.stat().st_mtime)
 
-
-def extract_version(setup_path: Path, explicit_version: str | None) -> str:
-    if explicit_version:
-        return explicit_version
-
-    pattern = re.compile(rf"^{re.escape(APP_NAME)}-v(.+)-{re.escape(WINDOWS_X64_SUFFIX)}-setup\.exe$", re.IGNORECASE)
+def extract_version(setup_path: Path, explicit_version: str | None, metadata: MsiMetadata) -> str:
+    pattern = re.compile(rf"^{re.escape(APP_NAME)}-v(.+)-{re.escape(WINDOWS_X64_SUFFIX)}-setup\.msi$", re.IGNORECASE)
     match = pattern.match(setup_path.name)
     if not match:
         raise ValueError(f"Cannot infer version from installer name: {setup_path.name}")
-    return match.group(1)
+    version = metadata.version
+    if match.group(1) != version or (explicit_version and explicit_version != version):
+        raise ValueError("The requested version, artifact name and MSI ProductVersion must match.")
+    return version
 
 
-def read_or_compute_sha256(setup_path: Path, explicit_sha256: str | None) -> str:
-    if explicit_sha256:
-        return explicit_sha256.strip()
-
-    sha_path = setup_path.with_suffix(setup_path.suffix + ".sha256")
+def read_or_compute_sha256(setup_path: Path, explicit_sha256: str | None, version: str) -> str:
+    actual_sha256 = sha256_file(setup_path).upper()
+    expected_sha256 = []
+    if explicit_sha256 is not None:
+        expected_sha256.append(explicit_sha256.strip())
+    sha_path = setup_path.parent / checksum_filename(version)
     if sha_path.exists():
-        content = sha_path.read_text(encoding="utf-8", errors="ignore").strip()
-        if content:
-            return content.split()[0]
-
-    digest = hashlib.sha256(setup_path.read_bytes()).hexdigest()
-    return digest
+        checksums = read_checksums(sha_path)
+        if setup_path.name not in checksums:
+            raise ValueError(f"Installer is missing from checksum file: {sha_path}")
+        expected_sha256.append(checksums[setup_path.name])
+    for expected in expected_sha256:
+        if not re.fullmatch(r"[0-9a-fA-F]{64}", expected) or expected.upper() != actual_sha256:
+            raise ValueError("Installer SHA256 does not match the supplied value or checksum file; regenerate after signing.")
+    return actual_sha256
 
 
 def release_url(version: str) -> str:
-    return f"{REPO_URL}/releases/download/v{version}/{APP_NAME}-v{version}-{WINDOWS_X64_SUFFIX}-setup.exe"
+    return f"{REPO_URL}/releases/download/v{version}/{APP_NAME}-v{version}-{WINDOWS_X64_SUFFIX}-setup.msi"
 
 
 def notes_url(version: str) -> str:
@@ -131,34 +137,35 @@ def build_version_manifest(version: str) -> str:
     )
 
 
-def build_installer_manifest(version: str, installer_url: str, installer_sha256: str) -> str:
+def build_installer_manifest(version: str, installer_url: str, installer_sha256: str,
+                             metadata: MsiMetadata) -> str:
     return schema_header("installer") + (
         f"PackageIdentifier: {PACKAGE_IDENTIFIER}\n"
         f"PackageVersion: {version}\n"
-        f"InstallerType: exe\n"
+        f"InstallerType: msi\n"
         f"Dependencies:\n"
         f"  PackageDependencies:\n"
         f"  - PackageIdentifier: {VC_RUNTIME_PACKAGE}\n"
         f"Scope: user\n"
+        f"ElevationRequirement: elevationProhibited\n"
         f"InstallModes:\n"
+        f"- interactive\n"
         f"- silent\n"
         f"- silentWithProgress\n"
-        f"InstallerSwitches:\n"
-        f"  Silent: --silent\n"
-        f"  SilentWithProgress: --silent\n"
         f"UpgradeBehavior: install\n"
-        f"ProductCode: {PACKAGE_IDENTIFIER}\n"
+        f"ProductCode: {json.dumps(metadata.product_code)}\n"
         f"AppsAndFeaturesEntries:\n"
         f"- DisplayName: {DISPLAY_NAME}\n"
         f"  DisplayVersion: {version}\n"
         f"  Publisher: {PUBLISHER}\n"
-        f"  ProductCode: {PACKAGE_IDENTIFIER}\n"
-        f"  InstallerType: exe\n"
+        f"  ProductCode: {json.dumps(metadata.product_code)}\n"
+        f"  UpgradeCode: {json.dumps(metadata.upgrade_code)}\n"
+        f"  InstallerType: msi\n"
         f"Installers:\n"
         f"- Architecture: x64\n"
         f"  InstallerUrl: {installer_url}\n"
         f"  InstallerSha256: {installer_sha256}\n"
-        f"  ProductCode: {PACKAGE_IDENTIFIER}\n"
+        f"  ProductCode: {json.dumps(metadata.product_code)}\n"
         f"ManifestType: installer\n"
         f"ManifestVersion: {MANIFEST_VERSION}\n"
     )
@@ -195,21 +202,22 @@ def main() -> None:
     release_dir = Path(args.release_dir).resolve()
     output_dir = Path(args.output_dir).resolve()
 
-    if not release_dir.exists():
+    if args.installer is None and not release_dir.exists():
         raise FileNotFoundError(f"Release directory does not exist: {release_dir}")
 
-    setup_path = detect_setup_artifact(release_dir)
-    version = extract_version(setup_path, args.version)
+    setup_path = args.installer.resolve() if args.installer else detect_setup_artifact(release_dir, args.version)
+    metadata = read_msi_metadata(setup_path)
+    version = extract_version(setup_path, args.version, metadata)
     installer_url = args.installer_url or release_url(version)
     release_notes_url = args.release_notes_url or notes_url(version)
-    installer_sha256 = read_or_compute_sha256(setup_path, args.installer_sha256)
+    installer_sha256 = read_or_compute_sha256(setup_path, args.installer_sha256, version)
 
     target_dir = manifest_root(output_dir, version)
     target_dir.mkdir(parents=True, exist_ok=True)
 
     write_text(target_dir / f"{PACKAGE_IDENTIFIER}.yaml", build_version_manifest(version))
     write_text(target_dir / f"{PACKAGE_IDENTIFIER}.installer.yaml",
-               build_installer_manifest(version, installer_url, installer_sha256))
+               build_installer_manifest(version, installer_url, installer_sha256, metadata))
     write_text(target_dir / f"{PACKAGE_IDENTIFIER}.locale.en-US.yaml",
                build_locale_manifest(
                    version,
